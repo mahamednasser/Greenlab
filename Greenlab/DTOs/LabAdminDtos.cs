@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Greenlab.Models;
 
 namespace Greenlab.DTOs;
 
@@ -57,4 +58,16 @@ public class AddLabSectionsRequest
 {
     [MinLength(1)]
     public List<LabSectionSlotDto> Sections { get; set; } = new();
+}
+
+public class LabDeviceDto
+{
+    public int Id { get; set; }
+    public int LabId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public LabDeviceType DeviceType { get; set; }
+    public string? IpAddress { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime? LastSeenAt { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

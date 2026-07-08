@@ -10,4 +10,7 @@ public class LabSectionSchedule
     public TimeSpan StartTime { get; set; }
     public TimeSpan EndTime { get; set; }
     public string? CourseName { get; set; }
+    public string? SectionName { get; set; }
+    public string? AcademicTerm { get; set; }
+    public bool IsActive { get; set; } = true;
 }

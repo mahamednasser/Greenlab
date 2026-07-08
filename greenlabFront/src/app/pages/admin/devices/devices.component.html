@@ -1,0 +1,41 @@
+﻿<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>{{ 'ADMIN.DEVICES.TITLE' | translate }}</h1>
+      <p class="sub">{{ 'ADMIN.DEVICES.SUB' | translate }}</p>
+    </div>
+  </div>
+
+  <p *ngIf="loading" class="state-msg">{{ 'ADMIN.DEVICES.LOADING' | translate }}</p>
+  <p *ngIf="errorMsg" class="state-msg err">{{ errorMsg | translate }}</p>
+  <p *ngIf="!loading && !errorMsg && devices.length === 0" class="state-msg">
+    {{ 'ADMIN.DEVICES.EMPTY' | translate }}
+  </p>
+
+  <div class="data-card" *ngIf="!loading && !errorMsg && devices.length">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'ADMIN.DEVICES.COL_LAB' | translate }}</th>
+          <th>{{ 'ADMIN.DEVICES.COL_NAME' | translate }}</th>
+          <th>{{ 'ADMIN.DEVICES.COL_TYPE' | translate }}</th>
+          <th>{{ 'ADMIN.DEVICES.COL_IP' | translate }}</th>
+          <th>{{ 'ADMIN.DEVICES.COL_STATUS' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let d of devices">
+          <td>{{ d.labName }}</td>
+          <td>{{ d.name }}</td>
+          <td>{{ typeKey(d.deviceType) | translate }}</td>
+          <td>{{ d.ipAddress || '—' }}</td>
+          <td>
+            <span class="badge" [class.ok]="d.isActive" [class.off]="!d.isActive">
+              {{ (d.isActive ? 'ADMIN.STATUS_ACTIVE' : 'ADMIN.STATUS_INACTIVE') | translate }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

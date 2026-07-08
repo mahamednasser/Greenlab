@@ -50,6 +50,12 @@ namespace Greenlab.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Action");
+
+                    b.HasIndex("LabId", "CreatedAt");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
                     b.ToTable("AuditLogs");
                 });
 
@@ -64,8 +70,11 @@ namespace Greenlab.Data.Migrations
                     b.Property<string>("CameraRtspUrl")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("CvLabCode")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("DeviceKey")
                         .IsRequired()
@@ -91,7 +100,13 @@ namespace Greenlab.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeviceKey");
+                    b.HasIndex("CvLabCode");
+
+                    b.HasIndex("DeviceKey")
+                        .IsUnique();
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("Labs");
                 });
@@ -152,6 +167,9 @@ namespace Greenlab.Data.Migrations
                     b.Property<int>("LabId")
                         .HasColumnType("int");
 
+                    b.Property<int>("ControlMode")
+                        .HasColumnType("int");
+
                     b.Property<bool?>("ForceFanOn")
                         .HasColumnType("bit");
 
@@ -175,7 +193,56 @@ namespace Greenlab.Data.Migrations
 
                     b.HasKey("LabId");
 
+                    b.HasIndex("SetByUserId");
+
                     b.ToTable("LabControlOverrides");
+                });
+
+            modelBuilder.Entity("Greenlab.Models.LabDevice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeviceKeyHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("DeviceType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LabId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("LastSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeviceKeyHash")
+                        .IsUnique();
+
+                    b.HasIndex("LabId");
+
+                    b.ToTable("LabDevices");
                 });
 
             modelBuilder.Entity("Greenlab.Models.LabSectionSchedule", b =>
@@ -185,6 +252,10 @@ namespace Greenlab.Data.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AcademicTerm")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("CourseName")
                         .HasMaxLength(200)
@@ -196,17 +267,111 @@ namespace Greenlab.Data.Migrations
                     b.Property<TimeSpan>("EndTime")
                         .HasColumnType("time");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<int>("LabId")
                         .HasColumnType("int");
+
+                    b.Property<string>("SectionName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<TimeSpan>("StartTime")
                         .HasColumnType("time");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DayOfWeek", "StartTime", "EndTime");
+
                     b.HasIndex("LabId", "DayOfWeek", "StartTime");
 
                     b.ToTable("LabSectionSchedules");
+                });
+
+            modelBuilder.Entity("Greenlab.Models.LabSensor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LabDeviceId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LabId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("SensorType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LabDeviceId");
+
+                    b.HasIndex("LabId", "SensorType");
+
+                    b.ToTable("LabSensors");
+                });
+
+            modelBuilder.Entity("Greenlab.Models.ManualControlCommand", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AcknowledgedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CommandStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("LabId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RequestedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RequestedValue")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Target")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequestedByUserId");
+
+                    b.HasIndex("LabId", "RequestedAt");
+
+                    b.ToTable("ManualControlCommands");
                 });
 
             modelBuilder.Entity("Greenlab.Models.ScheduleImageImport", b =>
@@ -258,11 +423,17 @@ namespace Greenlab.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AssignmentSource")
+                        .HasColumnType("int");
+
                     b.Property<int?>("DayOfWeek")
                         .HasColumnType("int");
 
                     b.Property<TimeSpan?>("EndTime")
                         .HasColumnType("time");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<int>("LabId")
                         .HasColumnType("int");
@@ -281,7 +452,7 @@ namespace Greenlab.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LabId");
+                    b.HasIndex("LabId", "DayOfWeek", "StartTime");
 
                     b.HasIndex("UserId", "DayOfWeek", "StartTime");
 
@@ -298,6 +469,9 @@ namespace Greenlab.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -307,6 +481,9 @@ namespace Greenlab.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -321,6 +498,23 @@ namespace Greenlab.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Greenlab.Models.AuditLog", b =>
+                {
+                    b.HasOne("Greenlab.Models.Lab", "Lab")
+                        .WithMany()
+                        .HasForeignKey("LabId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Greenlab.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Lab");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Greenlab.Models.LabChangeRequest", b =>
@@ -365,6 +559,24 @@ namespace Greenlab.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Greenlab.Models.User", "SetByUser")
+                        .WithMany()
+                        .HasForeignKey("SetByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Lab");
+
+                    b.Navigation("SetByUser");
+                });
+
+            modelBuilder.Entity("Greenlab.Models.LabDevice", b =>
+                {
+                    b.HasOne("Greenlab.Models.Lab", "Lab")
+                        .WithMany("Devices")
+                        .HasForeignKey("LabId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Lab");
                 });
 
@@ -377,6 +589,44 @@ namespace Greenlab.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Lab");
+                });
+
+            modelBuilder.Entity("Greenlab.Models.LabSensor", b =>
+                {
+                    b.HasOne("Greenlab.Models.LabDevice", "LabDevice")
+                        .WithMany("Sensors")
+                        .HasForeignKey("LabDeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Greenlab.Models.Lab", "Lab")
+                        .WithMany("Sensors")
+                        .HasForeignKey("LabId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Lab");
+
+                    b.Navigation("LabDevice");
+                });
+
+            modelBuilder.Entity("Greenlab.Models.ManualControlCommand", b =>
+                {
+                    b.HasOne("Greenlab.Models.Lab", "Lab")
+                        .WithMany("ManualControlCommands")
+                        .HasForeignKey("LabId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Greenlab.Models.User", "RequestedBy")
+                        .WithMany("ManualControlCommands")
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Lab");
+
+                    b.Navigation("RequestedBy");
                 });
 
             modelBuilder.Entity("Greenlab.Models.ScheduleImageImport", b =>
@@ -413,9 +663,20 @@ namespace Greenlab.Data.Migrations
                 {
                     b.Navigation("ControlOverride");
 
+                    b.Navigation("Devices");
+
+                    b.Navigation("ManualControlCommands");
+
                     b.Navigation("SectionSchedules");
 
+                    b.Navigation("Sensors");
+
                     b.Navigation("StaffAssignments");
+                });
+
+            modelBuilder.Entity("Greenlab.Models.LabDevice", b =>
+                {
+                    b.Navigation("Sensors");
                 });
 
             modelBuilder.Entity("Greenlab.Models.User", b =>
@@ -423,6 +684,8 @@ namespace Greenlab.Data.Migrations
                     b.Navigation("LabChangeRequestsRequested");
 
                     b.Navigation("LabChangeRequestsReviewed");
+
+                    b.Navigation("ManualControlCommands");
 
                     b.Navigation("ScheduleImageImports");
 

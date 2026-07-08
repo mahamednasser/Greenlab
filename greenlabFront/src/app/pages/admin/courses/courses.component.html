@@ -1,0 +1,75 @@
+﻿<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>{{ 'ADMIN.COURSES.TITLE' | translate }}</h1>
+      <p class="sub">{{ 'ADMIN.COURSES.SUB' | translate }}</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="toggleForm()">
+      {{ (showForm ? 'ADMIN.COURSES.CANCEL' : 'ADMIN.COURSES.ADD') | translate }}
+    </button>
+  </div>
+
+  <p *ngIf="loading" class="state-msg">{{ 'ADMIN.COURSES.LOADING' | translate }}</p>
+  <p *ngIf="errorMsg" class="state-msg err">{{ errorMsg | translate }}</p>
+  <p *ngIf="successMsg" class="state-msg ok">{{ successMsg | translate }}</p>
+  <p *ngIf="!loading && !errorMsg && sections.length === 0" class="state-msg">
+    {{ 'ADMIN.COURSES.EMPTY' | translate }}
+  </p>
+
+  <form class="form-card" *ngIf="showForm" (ngSubmit)="submitSection()">
+    <div class="form-row">
+      <label>{{ 'ADMIN.COURSES.FIELD_LAB' | translate }}</label>
+      <select [(ngModel)]="labId" name="labId" required>
+        <option *ngFor="let l of labs" [ngValue]="l.id">{{ l.name }}</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>{{ 'ADMIN.COURSES.FIELD_DAY' | translate }}</label>
+      <select [(ngModel)]="dayOfWeek" name="dayOfWeek" required>
+        <option *ngFor="let d of dayOptions" [ngValue]="d.value">
+          {{ ('ADMIN.DAYS.' + d.key) | translate }}
+        </option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>{{ 'ADMIN.COURSES.FIELD_COURSE' | translate }}</label>
+      <input [(ngModel)]="courseName" name="courseName" required />
+    </div>
+    <div class="form-row time-row">
+      <div>
+        <label>{{ 'ADMIN.COURSES.FIELD_START' | translate }}</label>
+        <input type="time" [(ngModel)]="startTime" name="startTime" required />
+      </div>
+      <div>
+        <label>{{ 'ADMIN.COURSES.FIELD_END' | translate }}</label>
+        <input type="time" [(ngModel)]="endTime" name="endTime" required />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn-primary" [disabled]="saving || !courseName.trim()">
+        {{ 'ADMIN.COURSES.SAVE' | translate }}
+      </button>
+    </div>
+  </form>
+
+  <div class="data-card" *ngIf="!loading && !errorMsg && sections.length">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'ADMIN.COURSES.COL_COURSE' | translate }}</th>
+          <th>{{ 'ADMIN.COURSES.COL_LAB' | translate }}</th>
+          <th>{{ 'ADMIN.COURSES.COL_DAY' | translate }}</th>
+          <th>{{ 'ADMIN.COURSES.COL_TIME' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of sections">
+          <td>{{ s.courseName || '—' }}</td>
+          <td>{{ s.labName }}</td>
+          <td>{{ ('ADMIN.DAYS.' + dayLabel(s.dayOfWeek)) | translate }}</td>
+          <td>{{ formatTime(s.startTime) }} – {{ formatTime(s.endTime) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

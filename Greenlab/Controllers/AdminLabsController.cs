@@ -1,6 +1,7 @@
 using Greenlab.Data;
 using Greenlab.DTOs;
 using Greenlab.Models;
+using Greenlab.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -48,6 +49,13 @@ public class AdminLabsController : ControllerBase
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         _db.LabControlOverrides.Add(new LabControlOverride { LabId = lab.Id, UpdatedAt = DateTime.UtcNow });
+        _db.LabDevices.Add(new LabDevice
+        {
+            LabId = lab.Id,
+            Name = $"{lab.Name} ESP32",
+            DeviceKeyHash = DeviceKeyHasher.Hash(key),
+            DeviceType = LabDeviceType.Esp32Controller
+        });
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return CreatedAtAction(nameof(Get), new { id = lab.Id }, MapDetail(lab));
@@ -71,6 +79,20 @@ public class AdminLabsController : ControllerBase
     }
 
     /// <summary>Add section time slots to a lab (weekly recurring).</summary>
+    [HttpGet("{labId:int}/devices")]
+    public async Task<ActionResult<IReadOnlyList<LabDeviceDto>>> ListDevices(int labId, CancellationToken cancellationToken)
+    {
+        if (!await _db.Labs.AnyAsync(l => l.Id == labId, cancellationToken).ConfigureAwait(false))
+            return NotFound();
+
+        var rows = await _db.LabDevices
+            .AsNoTracking()
+            .Where(d => d.LabId == labId)
+            .OrderBy(d => d.Name)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+        return rows.Select(MapDevice).ToList();
+    }
+
     [HttpPost("{id:int}/sections")]
     public async Task<ActionResult> AddSections(int id, [FromBody] AddLabSectionsRequest req, CancellationToken cancellationToken)
     {
@@ -102,5 +124,17 @@ public class AdminLabsController : ControllerBase
         TempFanOnThresholdCelsius = l.TempFanOnThresholdCelsius,
         CvLabCode = l.CvLabCode,
         CameraRtspUrl = l.CameraRtspUrl
+    };
+
+    private static LabDeviceDto MapDevice(LabDevice d) => new()
+    {
+        Id = d.Id,
+        LabId = d.LabId,
+        Name = d.Name,
+        DeviceType = d.DeviceType,
+        IpAddress = d.IpAddress,
+        IsActive = d.IsActive,
+        LastSeenAt = d.LastSeenAt,
+        CreatedAt = d.CreatedAt
     };
 }

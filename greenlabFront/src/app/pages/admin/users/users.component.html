@@ -1,0 +1,101 @@
+﻿<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>{{ 'ADMIN.USERS.TITLE' | translate }}</h1>
+      <p class="sub">{{ 'ADMIN.USERS.SUB' | translate }}</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()" *ngIf="!showForm">
+      {{ 'ADMIN.USERS.ADD' | translate }}
+    </button>
+  </div>
+
+  <p *ngIf="loading" class="state-msg">{{ 'ADMIN.USERS.LOADING' | translate }}</p>
+  <p *ngIf="errorMsg && !showForm" class="state-msg err">{{ errorMsg | translate }}</p>
+  <p *ngIf="errorMsg && showForm" class="state-msg err">{{ errorMsg.startsWith('ADMIN.') ? (errorMsg | translate) : errorMsg }}</p>
+  <p *ngIf="successMsg" class="state-msg ok">{{ successMsg | translate }}</p>
+  <p *ngIf="!loading && !errorMsg && !showForm && users.length === 0" class="state-msg">
+    {{ 'ADMIN.USERS.EMPTY' | translate }}
+  </p>
+
+  <form class="form-card user-form" *ngIf="showForm" (ngSubmit)="submit()">
+    <h2 class="form-title">
+      {{ (isEditing ? 'ADMIN.USERS.EDIT_TITLE' : 'ADMIN.USERS.ADD_TITLE') | translate }}
+    </h2>
+
+    <div class="form-row">
+      <label>{{ 'ADMIN.USERS.FIELD_NAME' | translate }}</label>
+      <input [(ngModel)]="fullName" name="fullName" required />
+    </div>
+    <div class="form-row">
+      <label>{{ 'ADMIN.USERS.FIELD_EMAIL' | translate }}</label>
+      <input type="email" [(ngModel)]="email" name="email" required />
+    </div>
+    <div class="form-row">
+      <label>{{ 'ADMIN.USERS.FIELD_ROLE' | translate }}</label>
+      <select [(ngModel)]="role" name="role" required>
+        <option *ngFor="let r of roleOptions" [value]="r">
+          {{ roleKey(r) | translate }}
+        </option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>
+        {{ (isEditing ? 'ADMIN.USERS.FIELD_PASSWORD_EDIT' : 'ADMIN.USERS.FIELD_PASSWORD') | translate }}
+      </label>
+      <input
+        type="password"
+        [(ngModel)]="password"
+        name="password"
+        [required]="!isEditing"
+        autocomplete="new-password" />
+    </div>
+    <div class="form-row checkbox-row">
+      <label>
+        <input type="checkbox" [(ngModel)]="isActive" name="isActive" />
+        {{ 'ADMIN.USERS.FIELD_ACTIVE' | translate }}
+      </label>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn-primary" [disabled]="saving">
+        {{ (saving ? 'ADMIN.USERS.SAVING' : 'ADMIN.USERS.SAVE') | translate }}
+      </button>
+      <button type="button" class="btn-secondary" (click)="cancelForm()" [disabled]="saving">
+        {{ 'ADMIN.USERS.CANCEL' | translate }}
+      </button>
+    </div>
+  </form>
+
+  <div class="data-card" *ngIf="!loading && users.length">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'ADMIN.USERS.COL_NAME' | translate }}</th>
+          <th>{{ 'ADMIN.USERS.COL_EMAIL' | translate }}</th>
+          <th>{{ 'ADMIN.USERS.COL_ROLE' | translate }}</th>
+          <th>{{ 'ADMIN.USERS.COL_STATUS' | translate }}</th>
+          <th class="col-actions">{{ 'ADMIN.USERS.COL_ACTIONS' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of users">
+          <td>{{ u.fullName }}</td>
+          <td>{{ u.email }}</td>
+          <td><span class="badge role">{{ roleKey(u.role) | translate }}</span></td>
+          <td>
+            <span class="badge" [class.ok]="u.isActive" [class.off]="!u.isActive">
+              {{ (u.isActive ? 'ADMIN.STATUS_ACTIVE' : 'ADMIN.STATUS_INACTIVE') | translate }}
+            </span>
+          </td>
+          <td class="col-actions">
+            <button type="button" class="btn-icon" (click)="openEdit(u)" [title]="'ADMIN.USERS.EDIT' | translate">
+              {{ 'ADMIN.USERS.EDIT' | translate }}
+            </button>
+            <button type="button" class="btn-icon danger" (click)="deleteUser(u)" [title]="'ADMIN.USERS.DELETE' | translate">
+              {{ 'ADMIN.USERS.DELETE' | translate }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

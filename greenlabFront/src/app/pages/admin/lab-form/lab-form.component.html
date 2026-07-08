@@ -1,0 +1,43 @@
+﻿<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>{{ 'ADMIN.LAB_FORM.TITLE' | translate }}</h1>
+      <p class="sub">{{ 'ADMIN.LAB_FORM.SUB' | translate }}</p>
+    </div>
+  </div>
+
+  <p *ngIf="errorMsg" class="state-msg err">{{ errorMsg | translate }}</p>
+
+  <form class="form-card" (ngSubmit)="submit()">
+    <div class="form-row">
+      <label>{{ 'ADMIN.LAB_FORM.FIELD_NAME' | translate }}</label>
+      <input [(ngModel)]="name" name="name" required />
+    </div>
+    <div class="form-row">
+      <label>{{ 'ADMIN.LAB_FORM.FIELD_DEVICE_KEY' | translate }}</label>
+      <input [(ngModel)]="deviceKey" name="deviceKey" />
+    </div>
+    <div class="form-row">
+      <label>{{ 'ADMIN.LAB_FORM.FIELD_LIGHT' | translate }}</label>
+      <input type="number" [(ngModel)]="lightThreshold" name="lightThreshold" />
+    </div>
+    <div class="form-row">
+      <label>{{ 'ADMIN.LAB_FORM.FIELD_TEMP' | translate }}</label>
+      <input type="number" step="0.1" [(ngModel)]="tempFanOnThresholdCelsius" name="tempFanOnThresholdCelsius" />
+    </div>
+    <div class="form-row">
+      <label>{{ 'ADMIN.LAB_FORM.FIELD_CV' | translate }}</label>
+      <input [(ngModel)]="cvLabCode" name="cvLabCode" />
+    </div>
+    <div class="form-row">
+      <label>{{ 'ADMIN.LAB_FORM.FIELD_CAMERA' | translate }}</label>
+      <input [(ngModel)]="cameraRtspUrl" name="cameraRtspUrl" />
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn-primary" [disabled]="saving || !name.trim()">
+        {{ (saving ? 'ADMIN.LAB_FORM.SAVING' : 'ADMIN.LAB_FORM.SUBMIT') | translate }}
+      </button>
+      <a routerLink="/labs" class="btn-secondary">{{ 'ADMIN.LAB_FORM.CANCEL' | translate }}</a>
+    </div>
+  </form>
+</div>

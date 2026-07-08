@@ -15,18 +15,18 @@ public class DevicesController : ControllerBase
     public DevicesController(IDeviceCommandService device) => _device = device;
 
     /// <summary>ESP32: motion + optional sensor readings. Header X-Lab-Device-Key required.</summary>
-    //[HttpPost("{labId:int}/event")]
-    //public async Task<ActionResult<DeviceEventResponse>> PostEvent(
-    //    int labId,
-    //    [FromHeader(Name = "X-Lab-Device-Key")] string? deviceKey,
-    //    [FromBody] DeviceEventRequest body,
-    //    CancellationToken cancellationToken)
-    //{
-    //    var res = await _device.HandleDeviceEventAsync(labId, deviceKey, body, cancellationToken).ConfigureAwait(false);
-    //    if (res == null)
-    //        return Unauthorized();
-    //    return res;
-    //}
+    [HttpPost("{labId:int}/event")]
+    public async Task<ActionResult<DeviceEventResponse>> PostEvent(
+        int labId,
+        [FromHeader(Name = "X-Lab-Device-Key")] string? deviceKey,
+        [FromBody] DeviceEventRequest body,
+        CancellationToken cancellationToken)
+    {
+        var res = await _device.HandleDeviceEventAsync(labId, deviceKey, body, cancellationToken).ConfigureAwait(false);
+        if (res == null)
+            return Unauthorized();
+        return res;
+    }
 
 
 
@@ -105,12 +105,12 @@ public class DevicesController : ControllerBase
 
     public class MotionRequest
     {
-        public string Ip { get; set; }
+        public string Ip { get; set; } = string.Empty;
     }
     public class MotionResponse
     {
         public bool Approved { get; set; }
-        public string ForceLight { get; set; } // on / off / auto
+        public string ForceLight { get; set; } = "auto"; // on / off / auto
     }
 
 

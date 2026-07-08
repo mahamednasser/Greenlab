@@ -1,4 +1,5 @@
 using Greenlab.Models;
+using Greenlab.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -64,6 +65,22 @@ public static class DbSeeder
         db.LabControlOverrides.AddRange(
             new LabControlOverride { LabId = lab1.Id, UpdatedAt = DateTime.UtcNow },
             new LabControlOverride { LabId = lab2.Id, UpdatedAt = DateTime.UtcNow });
+
+        db.LabDevices.AddRange(
+            new LabDevice
+            {
+                LabId = lab1.Id,
+                Name = "Lab A ESP32",
+                DeviceKeyHash = DeviceKeyHasher.Hash(lab1.DeviceKey),
+                DeviceType = LabDeviceType.Esp32Controller
+            },
+            new LabDevice
+            {
+                LabId = lab2.Id,
+                Name = "Lab B ESP32",
+                DeviceKeyHash = DeviceKeyHasher.Hash(lab2.DeviceKey),
+                DeviceType = LabDeviceType.Esp32Controller
+            });
 
         db.LabSectionSchedules.Add(new LabSectionSchedule
         {

@@ -1,0 +1,146 @@
+/*
+ * Greenlab ESP32 firmware — Ultrasonic motion → ASP.NET Web API → relay commands.
+ * Libraries (Arduino Library Manager): DHT sensor library (Adafruit), ArduinoJson (Benoit Blanchon).
+ * Board: ESP32. Set your WiFi, API URL, LAB_ID, and DEVICE_KEY to match the Lab row in SQL Server.
+ */
+
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <DHT.h>
+
+// ----- WiFi & API (edit for your network) -----
+static const char *WIFI_SSID = "YOUR_WIFI_SSID";
+static const char *WIFI_PASS = "YOUR_WIFI_PASSWORD";
+static const char *API_HOST = "192.168.1.10";   // PC running ASP.NET (HTTP port from launchSettings)
+static const uint16_t API_PORT = 5076;
+static const int LAB_ID = 1;
+static const char *DEVICE_KEY = "dev-key-lab-a-change-me";  // Lab.DeviceKey in database
+
+// ----- Pins (adjust to your wiring) -----
+#define TRIG_PIN    4
+#define ECHO_PIN    2
+#define DHT_PIN     5
+#define DHT_TYPE    DHT11
+#define LDR_PIN     34
+
+#define RELAY_LIGHT  26   // channel 1 — lighting
+#define RELAY_FAN    27   // channel 2 — fan
+#define RELAY_CH3    25   // spare
+#define RELAY_CH4    33   // spare
+
+static const int DISTANCE_THRESHOLD_CM = 50;
+static const unsigned long MOTION_COOLDOWN_MS = 1500;
+
+// Relays are active-LOW (same as original sketch)
+#define RELAY_ON  LOW
+#define RELAY_OFF HIGH
+
+DHT dht(DHT_PIN, DHT_TYPE);
+
+bool wasNear = false;
+unsigned long lastPostMs = 0;
+
+long readDistanceCM() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  long duration = pulseIn(ECHO_PIN, HIGH, 30000);
+  if (duration == 0) return -1;
+  return (long)(duration * 0.034 / 2);
+}
+
+bool postLabEvent(bool motion, long distanceCm, int ldr, float tempC, float hum) {
+  if (WiFi.status() != WL_CONNECTED) return false;
+
+  WiFiClient client;
+  HTTPClient http;
+  String url = String("http://") + API_HOST + ":" + API_PORT + "/api/devices/" + LAB_ID + "/event";
+
+  http.begin(client, url);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-Lab-Device-Key", DEVICE_KEY);
+
+  StaticJsonDocument<256> doc;
+  doc["motionDetected"] = motion;
+  doc["distanceCm"] = distanceCm;
+  doc["ldrValue"] = ldr;
+  if (!isnan(tempC)) doc["temperatureCelsius"] = tempC;
+  if (!isnan(hum)) doc["humidity"] = hum;
+
+  String body;
+  serializeJson(doc, body);
+
+  int code = http.POST(body);
+  if (code != 200) {
+    http.end();
+    return false;
+  }
+
+  String resp = http.getString();
+  http.end();
+
+  StaticJsonDocument<384> in;
+  DeserializationError err = deserializeJson(in, resp);
+  if (err) return false;
+
+  bool lightOn = in["lightOn"] | false;
+  bool fanOn = in["fanOn"] | false;
+  bool r3 = in["relay3On"] | false;
+  bool r4 = in["relay4On"] | false;
+
+  digitalWrite(RELAY_LIGHT, lightOn ? RELAY_ON : RELAY_OFF);
+  digitalWrite(RELAY_FAN, fanOn ? RELAY_ON : RELAY_OFF);
+  digitalWrite(RELAY_CH3, r3 ? RELAY_ON : RELAY_OFF);
+  digitalWrite(RELAY_CH4, r4 ? RELAY_ON : RELAY_OFF);
+
+  return true;
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+  pinMode(RELAY_LIGHT, OUTPUT);
+  pinMode(RELAY_FAN, OUTPUT);
+  pinMode(RELAY_CH3, OUTPUT);
+  pinMode(RELAY_CH4, OUTPUT);
+  digitalWrite(RELAY_LIGHT, RELAY_OFF);
+  digitalWrite(RELAY_FAN, RELAY_OFF);
+  digitalWrite(RELAY_CH3, RELAY_OFF);
+  digitalWrite(RELAY_CH4, RELAY_OFF);
+
+  dht.begin();
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  Serial.print("WiFi connecting");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+  long distance = readDistanceCM();
+  int ldr = analogRead(LDR_PIN);
+  float hum = dht.readHumidity();
+  float temp = dht.readTemperature();
+
+  bool isNear = (distance > 0 && distance <= DISTANCE_THRESHOLD_CM);
+  bool motionEdge = (isNear && !wasNear && (millis() - lastPostMs > MOTION_COOLDOWN_MS));
+
+  if (motionEdge) {
+    lastPostMs = millis();
+    bool ok = postLabEvent(true, distance, ldr, temp, hum);
+    Serial.println(ok ? "POST OK" : "POST failed");
+  }
+
+  wasNear = isNear;
+  delay(100);
+}

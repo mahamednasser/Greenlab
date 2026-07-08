@@ -1,0 +1,105 @@
+<div class="labs-page">
+
+  <p *ngIf="loading" class="state-msg">{{ 'LABS.LOADING' | translate }}</p>
+  <p *ngIf="errorMsg" class="state-msg err">{{ errorMsg | translate }}</p>
+
+  <div class="page-header">
+    <div>
+      <h1>{{ 'LABS.TITLE' | translate }}</h1>
+      <p class="sub">{{ 'LABS.SUB' | translate }}</p>
+    </div>
+    <button *ngIf="auth.isAdmin()" type="button" class="btn-add" routerLink="/admin/labs/new">{{ 'LABS.ADD' | translate }}</button>
+  </div>
+
+  <div class="filter-bar" *ngIf="!loading && !errorMsg && labs.length">
+    <span class="f-item"><span class="dot green"></span> {{ activeCount }} {{ 'LABS.ACTIVE' | translate }}</span>
+    <span class="f-item"><span class="dot orange"></span> {{ idleCount }} {{ 'LABS.IDLE' | translate }}</span>
+    <span class="f-item"><span class="dot gray"></span> {{ offCount }} {{ 'LABS.OFF' | translate }}</span>
+  </div>
+
+  <p *ngIf="!loading && !errorMsg && labs.length === 0" class="state-msg">{{ 'LABS.EMPTY' | translate }}</p>
+
+  <div class="labs-grid" *ngIf="!loading && !errorMsg && labs.length > 0">
+    <div class="lab-card" *ngFor="let lab of labs" [routerLink]="['/labs', lab.id]">
+
+      <div class="lab-top">
+        <div>
+          <h3>{{ lab.name }}</h3>
+          <p class="floor">{{ lab.floor }}</p>
+        </div>
+        <div class="lab-top-right">
+          <span class="status-badge" [class]="badgeClass(lab.status)">
+            <span class="sdot"></span>{{ statusKey(lab.status) | translate }}
+          </span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 3l4 4-4 4"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="energy-row">
+        <p class="energy-lbl">{{ 'LABS.ENERGY' | translate }}</p>
+        <p class="energy-val">{{ 'LABS.KWH_PAIR' | translate:{ used: lab.energyUsed, max: lab.energyMax } }}</p>
+      </div>
+      <div class="energy-track">
+        <div class="energy-fill"
+          [class]="fillClass(lab)"
+          [style.width.%]="(lab.energyUsed / lab.energyMax) * 100">
+        </div>
+      </div>
+
+      <div class="lab-footer">
+        <div class="dev-tags">
+          <button
+            type="button"
+            class="dev-tag dev-action"
+            [class]="tagClass(lab.ac)"
+            [disabled]="isFanBusy(lab.id)"
+            (click)="onToggleFan($event, lab)">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4">
+              <path d="M5 1v8M1 5h8M2.5 2.5l5 5M7.5 2.5l-5 5"/>
+            </svg>
+            {{ tagKey(lab.ac) | translate }}
+          </button>
+          <button
+            type="button"
+            class="dev-tag dev-action"
+            [class]="tagClass(lab.lights)"
+            [disabled]="isLightBusy(lab.id)"
+            (click)="onToggleLight($event, lab)">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4">
+              <circle cx="5" cy="4.5" r="2.5"/><path d="M5 1v.8M5 8.2v.8M1 5h.8M8.2 5H9"/>
+            </svg>
+            {{ tagKey(lab.lights) | translate }}
+          </button>
+          <span class="dev-tag" [class]="tagClass(lab.pcs)">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4">
+              <rect x="1" y="2" width="8" height="5.5" rx="1"/><path d="M3.5 9h3M5 7.5V9"/>
+            </svg>
+            {{ tagKey(lab.pcs) | translate }}
+          </span>
+        </div>
+        <span class="time-lbl">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3">
+            <circle cx="5.5" cy="5.5" r="4.5"/><path d="M5.5 3v2.5l1.5 1.2"/>
+          </svg>
+          {{ lab.lastUpdate }}
+        </span>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="ai-banner">
+    <div class="ai-icon">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="var(--green-primary)" stroke-width="1.7">
+        <path d="M9 2L5 9h4l-2 7 8-9H11L13 2z"/>
+      </svg>
+    </div>
+    <p>
+      <strong>{{ 'LABS.AI_TITLE' | translate }}</strong><br>
+      {{ 'LABS.AI_BODY' | translate }}
+    </p>
+  </div>
+
+</div>

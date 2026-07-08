@@ -19,10 +19,21 @@ public class DeviceCommandService : IDeviceCommandService
     {
         var lab = await _db.Labs
             .Include(l => l.ControlOverride)
+            .Include(l => l.Devices)
             .FirstOrDefaultAsync(l => l.Id == labId, cancellationToken).ConfigureAwait(false);
 
-        if (lab == null || string.IsNullOrEmpty(deviceKey) || !string.Equals(lab.DeviceKey, deviceKey, StringComparison.Ordinal))
+        if (lab == null || string.IsNullOrEmpty(deviceKey))
             return null;
+
+        var device = lab.Devices.FirstOrDefault(d =>
+            d.IsActive
+            && string.Equals(d.DeviceKeyHash, DeviceKeyHasher.Hash(deviceKey), StringComparison.Ordinal));
+        var legacyKeyMatches = string.Equals(lab.DeviceKey, deviceKey, StringComparison.Ordinal);
+        if (device == null && !legacyKeyMatches)
+            return null;
+
+        if (device != null)
+            device.LastSeenAt = DateTime.UtcNow;
 
         var ov = lab.ControlOverride;
 

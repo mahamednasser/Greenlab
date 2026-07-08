@@ -26,6 +26,8 @@ public class JwtTokenService : IJwtTokenService
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.FullName),
+            // Emit both claim styles for compatibility with previously issued tokens/config.
+            new("role", user.Role.ToString()),
             new(ClaimTypes.Role, user.Role.ToString())
         };
 

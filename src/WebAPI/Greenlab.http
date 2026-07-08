@@ -1,0 +1,91 @@
+@Greenlab_HostAddress = http://localhost:5076
+@token = paste_jwt_here
+
+### Login (seed: admin@greenlab.local / Admin123!)
+POST {{Greenlab_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@greenlab.local",
+  "password": "Admin123!"
+}
+
+###
+
+### ESP32 device event (Lab 1, key from seed)
+POST {{Greenlab_HostAddress}}/api/devices/1/event
+Content-Type: application/json
+X-Lab-Device-Key: dev-key-lab-a-change-me
+
+{
+  "motionDetected": true,
+  "distanceCm": 40,
+  "ldrValue": 500,
+  "temperatureCelsius": 30,
+  "humidity": 45
+}
+
+###
+
+### Admin — labs overview
+GET {{Greenlab_HostAddress}}/api/admin/labs/overview
+Authorization: Bearer {{token}}
+
+###
+
+### Staff — current labs (teacher@greenlab.local / Teacher123!)
+GET {{Greenlab_HostAddress}}/api/staff/me/current-labs
+Authorization: Bearer {{token}}
+
+###
+
+### Admin — list labs (CRUD)
+GET {{Greenlab_HostAddress}}/api/admin/labs
+Authorization: Bearer {{token}}
+
+###
+
+### Admin — create lab
+POST {{Greenlab_HostAddress}}/api/admin/labs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Lab C",
+  "lightThreshold": 2000,
+  "tempFanOnThresholdCelsius": 28,
+  "cvLabCode": "lab-c"
+}
+
+###
+
+### Admin — add weekly sections to lab 1
+POST {{Greenlab_HostAddress}}/api/admin/labs/1/sections
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "sections": [
+    { "dayOfWeek": "Tuesday", "startTime": "10:00:00", "endTime": "12:00:00", "courseName": "Workshop" }
+  ]
+}
+
+###
+
+### Admin — apply AI timetable (body from analyze-image response.analysis)
+POST {{Greenlab_HostAddress}}/api/admin/schedules/apply-analysis
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "createMissingUsers": true,
+  "labs": [ { "name": "Lab X" } ],
+  "sections": [
+    { "labName": "Lab X", "dayOfWeek": "Monday", "startTime": "09:00:00", "endTime": "11:00:00", "courseName": "Course 1" }
+  ],
+  "staffAssignments": [
+    { "personName": "Dr Ahmed", "role": "Teacher", "labName": "Lab X", "dayOfWeek": "Monday", "startTime": "09:00:00", "endTime": "11:00:00" }
+  ]
+}
+
+###

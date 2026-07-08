@@ -1,0 +1,115 @@
+<div class="lab-detail">
+
+  <p *ngIf="loading" class="state-msg">{{ 'LAB_DETAIL.LOADING' | translate }}</p>
+  <p *ngIf="errorMsg" class="state-msg err">{{ errorMsg | translate }}</p>
+  <p *ngIf="showStaffNote && !loading" class="state-msg staff">{{ 'LAB_DETAIL.STAFF_NOTE' | translate }}</p>
+
+  <a class="back-link" routerLink="/labs" *ngIf="!loading">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M10 3L5 8l5 5"/>
+    </svg>
+    {{ 'LAB_DETAIL.BACK' | translate }}
+  </a>
+
+  <div class="hero-card" *ngIf="!loading && !errorMsg">
+    <div class="hero-left">
+      <div class="hero-name-row">
+        <h2>{{ labName }}</h2>
+        <span class="status-badge" [ngClass]="{ active: statusLabel==='Active', idle: statusLabel==='Idle', off: statusLabel==='Off' }">
+          <span class="sdot"></span>{{ statusKey() | translate }}
+        </span>
+      </div>
+      <p class="hero-floor">{{ floorLabel }}</p>
+      <div class="hero-meta">
+        <span class="meta-tag green">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="var(--green-accent)" stroke-width="1.5">
+            <path d="M6.5 1L4 6h3l-1.5 6L11 6H8.5L10 1z"/>
+          </svg>
+          {{ occupancySummary }}
+        </span>
+        <span class="meta-tag gray">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4">
+            <circle cx="6.5" cy="6.5" r="5"/><path d="M6.5 4v3l2 1.5"/>
+          </svg>
+          {{ lastSeenSummary }}
+        </span>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="gauge">
+        <svg width="130" height="130" viewBox="0 0 130 130">
+          <circle cx="65" cy="65" r="50" fill="none" stroke="#e5e7eb" stroke-width="11"/>
+          <circle cx="65" cy="65" r="50" fill="none"
+            stroke="#22c55e" stroke-width="11"
+            [attr.stroke-dasharray]="gaugeArc + ' ' + gaugeTotal"
+            [attr.stroke-dashoffset]="gaugeOffset"
+            stroke-linecap="round"
+            transform="rotate(-90 65 65)"/>
+        </svg>
+        <div class="gauge-center">
+          <span class="gauge-num">{{ energyUsed }}</span>
+          <span class="gauge-unit">{{ 'LAB_DETAIL.KWH' | translate }}</span>
+        </div>
+      </div>
+      <p class="gauge-cap">{{ 'LAB_DETAIL.GAUGE_OF_MAX' | translate:{ pct: gaugePct } }}</p>
+    </div>
+  </div>
+
+  <h3 class="section-title" *ngIf="!loading && !errorMsg">{{ 'LAB_DETAIL.DEVICES' | translate:{ count: devices.length } }}</h3>
+
+  <div class="devices-grid" *ngIf="!loading && !errorMsg">
+    <div class="device-card" *ngFor="let d of devices">
+
+      <div class="device-top">
+        <div class="device-icon" [class]="iconBg(d.icon)">
+          <svg *ngIf="d.icon==='ac'" width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#6366f1" stroke-width="1.6">
+            <circle cx="11" cy="11" r="8"/><path d="M11 4v3M11 15v3M4 11h3M15 11h3"/>
+            <circle cx="11" cy="11" r="3"/>
+          </svg>
+          <svg *ngIf="d.icon==='light'" width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#eab308" stroke-width="1.6">
+            <circle cx="11" cy="9.5" r="4"/>
+            <path d="M11 2v1.5M11 17v1.5M4 9.5H5.5M16.5 9.5H18M6 5l1 1M14 14l1 1M16 5l-1 1M8 14l-1 1"/>
+            <path d="M8.5 14.5h5V17a1 1 0 01-1 1h-3a1 1 0 01-1-1v-2.5z"/>
+          </svg>
+          <svg *ngIf="d.icon==='pcs'" width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#8b5cf6" stroke-width="1.6">
+            <rect x="2" y="4" width="18" height="12" rx="2"/>
+            <path d="M7 20h8M11 16v4"/>
+          </svg>
+          <svg *ngIf="d.icon==='monitor'" width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#9ca3af" stroke-width="1.6">
+            <rect x="2" y="4" width="18" height="12" rx="2"/>
+            <path d="M7 20h8M11 16v4"/>
+          </svg>
+        </div>
+
+        <div class="device-info">
+          <p class="device-name">{{ d.name }}</p>
+          <span class="status-lbl" [class]="statusLblClass(d.statusLabel)">{{ tagKey(d.statusLabel) | translate }}</span>
+        </div>
+
+        <button type="button" class="toggle" [class.on]="d.isOn" (click)="d.isOn = !d.isOn">
+          <span class="thumb"></span>
+        </button>
+      </div>
+
+      <div class="device-bottom">
+        <span class="kwh-info" [class.muted]="d.runStatus==='NO USAGE'">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M6.5 1L4 6h3l-1.5 5L11 6H8L9.5 1z"/>
+          </svg>
+          <ng-container *ngIf="d.runStatus === 'NO USAGE'">{{ runKey(d) | translate }}</ng-container>
+          <ng-container *ngIf="d.runStatus !== 'NO USAGE'">{{ d.kwh }}</ng-container>
+        </span>
+        <span class="run-badge" [class]="runClass(d.runStatus)">
+          <span *ngIf="d.runStatus !== 'NO USAGE'" class="run-dot"></span>
+          <svg *ngIf="d.runStatus === 'NO USAGE'" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4">
+            <path d="M7 1L4 6h3l-1.5 4.5L11 6H8.5L10 1z"/>
+          </svg>
+          {{ runKey(d) | translate }}
+        </span>
+      </div>
+
+    </div>
+  </div>
+
+</div>

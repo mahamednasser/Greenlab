@@ -1,0 +1,113 @@
+<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>{{ 'ADMIN.STAFF.TITLE' | translate }}</h1>
+      <p class="sub">{{ 'ADMIN.STAFF.SUB' | translate }}</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="toggleForm()">
+      {{ (showForm ? 'ADMIN.STAFF.CANCEL' : 'ADMIN.STAFF.ADD') | translate }}
+    </button>
+  </div>
+
+  <p *ngIf="loading" class="state-msg">{{ 'ADMIN.STAFF.LOADING' | translate }}</p>
+  <p *ngIf="errorMsg" class="state-msg err">{{ errorMsg | translate }}</p>
+  <p *ngIf="successMsg" class="state-msg ok">{{ successMsg | translate }}</p>
+  <p *ngIf="!loading && !errorMsg && rows.length === 0" class="state-msg">
+    {{ 'ADMIN.STAFF.EMPTY' | translate }}
+  </p>
+
+  <form class="form-card staff-form" *ngIf="showForm" (ngSubmit)="submit()">
+    <div class="form-row">
+      <label>{{ 'ADMIN.STAFF.FIELD_STAFF' | translate }}</label>
+      <select [(ngModel)]="staffEmail" name="staffEmail" required>
+        <option *ngFor="let u of staffUsers" [value]="u.email">
+          {{ u.fullName }} ({{ u.email }})
+        </option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>{{ 'ADMIN.STAFF.FIELD_LAB' | translate }}</label>
+      <select [(ngModel)]="labId" name="labId" required>
+        <option *ngFor="let l of labs" [ngValue]="l.id">{{ l.name }}</option>
+      </select>
+    </div>
+    <div class="form-row checkbox-row">
+      <label>
+        <input type="checkbox" [(ngModel)]="useDateRange" name="useDateRange" />
+        {{ 'ADMIN.STAFF.USE_DATE_RANGE' | translate }}
+      </label>
+    </div>
+    <ng-container *ngIf="!useDateRange">
+      <div class="form-row">
+        <label>{{ 'ADMIN.STAFF.FIELD_DAY' | translate }}</label>
+        <select [(ngModel)]="dayOfWeek" name="dayOfWeek" required>
+          <option *ngFor="let d of dayOptions" [ngValue]="d.value">
+            {{ ('ADMIN.DAYS.' + d.key) | translate }}
+          </option>
+        </select>
+      </div>
+      <div class="form-row time-row">
+        <div>
+          <label>{{ 'ADMIN.STAFF.FIELD_START' | translate }}</label>
+          <input type="time" [(ngModel)]="startTime" name="startTime" required />
+        </div>
+        <div>
+          <label>{{ 'ADMIN.STAFF.FIELD_END' | translate }}</label>
+          <input type="time" [(ngModel)]="endTime" name="endTime" required />
+        </div>
+      </div>
+    </ng-container>
+    <ng-container *ngIf="useDateRange">
+      <div class="form-row time-row">
+        <div>
+          <label>{{ 'ADMIN.STAFF.FIELD_FROM' | translate }}</label>
+          <input type="datetime-local" [(ngModel)]="validFrom" name="validFrom" />
+        </div>
+        <div>
+          <label>{{ 'ADMIN.STAFF.FIELD_UNTIL' | translate }}</label>
+          <input type="datetime-local" [(ngModel)]="validUntil" name="validUntil" />
+        </div>
+      </div>
+    </ng-container>
+    <div class="form-actions">
+      <button type="submit" class="btn-primary" [disabled]="saving || !staffEmail">
+        {{ 'ADMIN.STAFF.SAVE' | translate }}
+      </button>
+    </div>
+  </form>
+
+  <div class="data-card" *ngIf="!loading && !errorMsg && rows.length">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'ADMIN.STAFF.COL_NAME' | translate }}</th>
+          <th>{{ 'ADMIN.STAFF.COL_ROLE' | translate }}</th>
+          <th>{{ 'ADMIN.STAFF.COL_LAB' | translate }}</th>
+          <th>{{ 'ADMIN.STAFF.COL_SCHEDULE' | translate }}</th>
+          <th>{{ 'ADMIN.STAFF.COL_SOURCE' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of rows">
+          <td>
+            <span class="staff-name">{{ r.staffName }}</span>
+            <span class="staff-email">{{ r.staffEmail }}</span>
+          </td>
+          <td><span class="badge role">{{ roleKey(r.staffRole) | translate }}</span></td>
+          <td>{{ r.labName }}</td>
+          <td>
+            <ng-container *ngIf="isWeekly(r)">
+              {{ ('ADMIN.DAYS.' + dayLabel(r.dayOfWeek)) | translate }}
+              {{ formatTime(r.startTime) }}–{{ formatTime(r.endTime) }}
+            </ng-container>
+            <ng-container *ngIf="!isWeekly(r) && isDateRange(r)">
+              {{ formatDate(r.validFrom!) }} – {{ formatDate(r.validUntil!) }}
+            </ng-container>
+            <ng-container *ngIf="!isWeekly(r) && !isDateRange(r)">—</ng-container>
+          </td>
+          <td>{{ sourceKey(r.assignmentSource) | translate }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

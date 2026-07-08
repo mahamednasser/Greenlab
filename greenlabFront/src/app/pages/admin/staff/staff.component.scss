@@ -1,0 +1,32 @@
+.staff-form {
+  max-width: 640px;
+}
+
+.time-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.checkbox-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-med);
+  cursor: pointer;
+}
+
+.staff-name {
+  display: block;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.staff-email {
+  display: block;
+  font-size: 12px;
+  color: var(--text-lt);
+  margin-top: 2px;
+}

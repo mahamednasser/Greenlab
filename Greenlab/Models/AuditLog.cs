@@ -6,6 +6,8 @@ public class AuditLog
     public string Action { get; set; } = string.Empty;
     public string? Details { get; set; }
     public int? LabId { get; set; }
+    public Lab? Lab { get; set; }
     public int? UserId { get; set; }
+    public User? User { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

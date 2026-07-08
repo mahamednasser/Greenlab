@@ -1,0 +1,139 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background:#fff; padding: 20px;
+}
+
+.auth-card {
+  display: flex; width: 100%; max-width: 980px;
+  min-height: 560px; border-radius: 22px; overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,.45);
+}
+
+/* ── Left Panel ─────────────────────────── */
+.left-panel {
+  flex: 0 0 42%; background: var(--green-lighter);
+  padding: 36px 34px; display: flex; flex-direction: column;
+}
+
+.logo-row {
+  display: flex; align-items: center; gap: 9px; margin-bottom: 40px;
+}
+.logo-icon {
+  width: 34px; height: 34px; background: var(--green-light);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+}
+.logo-text { font-size: 16px; font-weight: 700; color: var(--text-dark); }
+.g { color: var(--green-primary); }
+
+.left-body {
+  flex: 1;
+  h1 {
+    font-size: 30px; font-weight: 800; color: var(--text-dark);
+    line-height: 1.18; margin-bottom: 16px;
+    .hl { color: var(--green-primary); }
+  }
+  p { font-size: 14px; color: var(--text-gray); line-height: 1.65; }
+}
+
+.stat-pills { display: flex; gap: 12px; margin-top: 36px; }
+
+.stat-pill {
+  flex: 1; padding: 16px; border-radius: 14px;
+  border-bottom-right-radius: 0;
+  svg { display: block; margin-bottom: 10px; }
+  .pill-val { font-size: 20px; font-weight: 700; line-height: 1; }
+  .pill-lbl { font-size: 11px; margin-top: 3px; opacity: .7; }
+
+  &.dark {
+    background: var(--green-darker); color: #fff;
+    .pill-val { color: #fff; }
+    .pill-lbl { color: rgba(255,255,255,.7); }
+  }
+  &.light {
+    background: var(--green-light);
+    .pill-val { color: var(--green-primary); }
+    .pill-lbl { color: var(--text-gray); }
+  }
+}
+
+/* ── Right Panel ────────────────────────── */
+.right-panel {
+  flex: 1; background: var(--bg-white);
+  padding: 44px 48px; display: flex; flex-direction: column; justify-content: center;
+
+  h2 { font-size: 24px; font-weight: 700; color: var(--text-dark); margin-bottom: 6px; }
+  .form-sub { font-size: 13.5px; color: var(--text-gray); margin-bottom: 28px; }
+}
+
+.lbl { display: block; font-size: 13px; font-weight: 500; color: var(--text-med); margin-bottom: 7px; }
+
+.input-wrap {
+  position: relative; margin-bottom: 16px;
+  &:focus-within .ico { color: var(--green-accent); }
+}
+
+.ico {
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  color: var(--text-lt); pointer-events: none; flex-shrink: 0;
+}
+
+.inp {
+  width: 100%; padding: 12px 14px 12px 40px;
+  background: var(--green-lighter); border: 1.5px solid var(--border);
+  border-radius: var(--r-md); font-size: 14px; color: var(--text-dark);
+  outline: none; transition: border-color .15s;
+  &::placeholder { color: var(--text-lt); }
+  &:focus { border-color: var(--green-accent); }
+}
+
+.eye-btn {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--text-lt); padding: 2px;
+  &:hover { color: var(--text-gray); }
+}
+
+.forgot-row { text-align: right; margin: -4px 0 20px; }
+.link-green { color: var(--green-primary); font-size: 13px; font-weight: 500; cursor: pointer;
+  &.bold { font-weight: 600; } }
+
+.err-msg {
+  color: #b91c1c;
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+.hint-msg {
+  color: var(--text-gray);
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+
+.btn-submit {
+  width: 100%; padding: 13px;
+  background: var(--green-darker); color: #fff;
+  font-size: 15px; font-weight: 600; border-radius: var(--r-lg);
+  transition: background .15s; margin-bottom: 20px;
+  &:hover { background: var(--green-dark); }
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+}
+
+.or-divider {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--text-lt); font-size: 11px; letter-spacing: .8px; margin-bottom: 14px;
+  &::before,&::after { content:''; flex:1; height:1px; background: var(--border); }
+}
+
+.social-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+
+.social-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px; background: var(--green-lighter); border: 1.5px solid var(--border);
+  border-radius: var(--r-lg); font-size: 13.5px; font-weight: 500; color: var(--text-dark);
+  transition: border-color .15s;
+  &:hover { border-color: var(--green-accent); }
+}
+
+.bottom-txt { text-align: center; font-size: 13px; color: var(--text-gray); }

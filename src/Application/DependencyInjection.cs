@@ -1,0 +1,20 @@
+// Layer: Application
+// Responsibility: Registers application services, MediatR handlers, and validation pipeline behavior.
+using FluentValidation;
+using Greenlab.Application.Common.Behaviors;
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Greenlab.Application;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddApplication(this IServiceCollection services)
+    {
+        var assembly = typeof(DependencyInjection).Assembly;
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
+        services.AddValidatorsFromAssembly(assembly);
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        return services;
+    }
+}

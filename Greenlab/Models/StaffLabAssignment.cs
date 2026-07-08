@@ -19,4 +19,6 @@ public class StaffLabAssignment
     /// <summary>Temporary assignment: active between these UTC instants (e.g. approved section in another lab).</summary>
     public DateTime? ValidFrom { get; set; }
     public DateTime? ValidUntil { get; set; }
+    public StaffAssignmentSource AssignmentSource { get; set; } = StaffAssignmentSource.ScheduleImport;
+    public bool IsActive { get; set; } = true;
 }

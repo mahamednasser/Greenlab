@@ -1,0 +1,52 @@
+.user-form {
+  max-width: 520px;
+  margin-bottom: 8px;
+}
+
+.form-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+
+.checkbox-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-med);
+  cursor: pointer;
+}
+
+.col-actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: end;
+}
+
+.btn-icon {
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-white);
+  color: var(--green-primary);
+  margin-inline-start: 6px;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: var(--green-lighter);
+    border-color: var(--green-primary);
+  }
+
+  &.danger {
+    color: var(--red);
+    &:hover {
+      background: #fef2f2;
+      border-color: var(--red);
+    }
+  }
+}

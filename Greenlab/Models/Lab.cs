@@ -9,11 +9,15 @@ public class Lab
     public int LightThreshold { get; set; } = 2000;
     public float TempFanOnThresholdCelsius { get; set; } = 28f;
     public string? CvLabCode { get; set; }
-    public string? CameraHlspUrl { get; set; }
+    public string? CameraRtspUrl { get; set; }
     public int LastOccupancyCount { get; set; }
     public DateTime? LastOccupancyAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public LabControlOverride? ControlOverride { get; set; }
+    public ICollection<LabDevice> Devices { get; set; } = new List<LabDevice>();
+    public ICollection<LabSensor> Sensors { get; set; } = new List<LabSensor>();
     public ICollection<LabSectionSchedule> SectionSchedules { get; set; } = new List<LabSectionSchedule>();
     public ICollection<StaffLabAssignment> StaffAssignments { get; set; } = new List<StaffLabAssignment>();
+    public ICollection<ManualControlCommand> ManualControlCommands { get; set; } = new List<ManualControlCommand>();
 }

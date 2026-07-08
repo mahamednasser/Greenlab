@@ -66,6 +66,13 @@ public class ScheduleAnalysisApplier : IScheduleAnalysisApplier
         foreach (var lab in brandNewLabs)
         {
             _db.LabControlOverrides.Add(new LabControlOverride { LabId = lab.Id, UpdatedAt = DateTime.UtcNow });
+            _db.LabDevices.Add(new LabDevice
+            {
+                LabId = lab.Id,
+                Name = $"{lab.Name} ESP32",
+                DeviceKeyHash = DeviceKeyHasher.Hash(lab.DeviceKey),
+                DeviceType = LabDeviceType.Esp32Controller
+            });
         }
 
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

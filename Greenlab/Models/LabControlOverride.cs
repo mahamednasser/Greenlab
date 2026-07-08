@@ -12,7 +12,9 @@ public class LabControlOverride
     public bool? ForceFanOn { get; set; }
     public bool? ForceRelay3On { get; set; }
     public bool? ForceRelay4On { get; set; }
+    public ControlMode ControlMode { get; set; } = ControlMode.Automatic;
 
     public int? SetByUserId { get; set; }
+    public User? SetByUser { get; set; }
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
