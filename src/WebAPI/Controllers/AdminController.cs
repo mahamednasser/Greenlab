@@ -141,6 +141,32 @@ public class AdminController : ControllerBase
         });
     }
 
+    [HttpGet("sections")]
+    public async Task<ActionResult<IReadOnlyList<LabSectionListItemDto>>> ListSections(CancellationToken cancellationToken)
+    {
+        var rows = await _db.LabSectionSchedules
+            .AsNoTracking()
+            .Include(s => s.Lab)
+            .Where(s => s.IsActive)
+            .OrderBy(s => s.Lab.Name)
+            .ThenBy(s => s.DayOfWeek)
+            .ThenBy(s => s.StartTime)
+            .Select(s => new LabSectionListItemDto
+            {
+                Id = s.Id,
+                LabId = s.LabId,
+                LabName = s.Lab.Name,
+                DayOfWeek = (int)s.DayOfWeek,
+                StartTime = s.StartTime,
+                EndTime = s.EndTime,
+                CourseName = s.CourseName
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(rows);
+    }
+
     [HttpGet("staff-assignments")]
     public async Task<ActionResult<IReadOnlyList<StaffAssignmentListItemDto>>> ListStaffAssignments(CancellationToken cancellationToken)
     {
@@ -162,7 +188,7 @@ public class AdminController : ControllerBase
                 StaffRole = a.User.Role.ToString(),
                 LabId = a.LabId,
                 LabName = a.Lab.Name,
-                DayOfWeek = a.DayOfWeek,
+                DayOfWeek = a.DayOfWeek.HasValue ? (int)a.DayOfWeek.Value : null,
                 StartTime = a.StartTime,
                 EndTime = a.EndTime,
                 ValidFrom = a.ValidFrom,
@@ -181,66 +207,69 @@ public class AdminController : ControllerBase
         [FromBody] CreateStaffAssignmentRequest request,
         CancellationToken cancellationToken)
     {
-        var email = request.StaffEmail.Trim();
-        var user = await _db.Users.AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken)
-            .ConfigureAwait(false);
-        if (user == null)
-            return BadRequest($"Unknown staff email: {request.StaffEmail}");
-
-        if (user.Role != Role.Teacher && user.Role != Role.TeacherAssistant)
-            return BadRequest($"User {request.StaffEmail} is not Teacher or TeacherAssistant.");
-
-        var lab = await _db.Labs.AsNoTracking()
-            .FirstOrDefaultAsync(l => l.Id == request.LabId, cancellationToken)
-            .ConfigureAwait(false);
-        if (lab == null)
-            return BadRequest($"Unknown LabId {request.LabId}");
-
-        var hasWeekly = request.DayOfWeek.HasValue && request.StartTime.HasValue && request.EndTime.HasValue;
-        var hasRange = request.ValidFrom.HasValue && request.ValidUntil.HasValue;
-        if (!hasWeekly && !hasRange)
-            return BadRequest("Provide either (dayOfWeek + startTime + endTime) or (validFrom + validUntil).");
-
-        if (hasWeekly && request.StartTime >= request.EndTime)
-            return BadRequest("For weekly schedule, startTime must be before endTime.");
-
-        if (hasRange && request.ValidFrom >= request.ValidUntil)
-            return BadRequest("For date range, validFrom must be before validUntil.");
+        var (error, built) = await TryBuildAssignmentAsync(request, cancellationToken).ConfigureAwait(false);
+        if (error != null || built == null)
+            return BadRequest(error);
 
         var row = new StaffLabAssignment
         {
-            UserId = user.Id,
-            LabId = request.LabId,
-            DayOfWeek = request.DayOfWeek,
-            StartTime = request.StartTime,
-            EndTime = request.EndTime,
-            ValidFrom = request.ValidFrom,
-            ValidUntil = request.ValidUntil,
+            UserId = built.User.Id,
+            LabId = built.Lab.Id,
+            DayOfWeek = built.Day,
+            StartTime = built.Start,
+            EndTime = built.End,
+            ValidFrom = built.From,
+            ValidUntil = built.Until,
             AssignmentSource = StaffAssignmentSource.ManualAdmin,
             IsActive = true
         };
 
         _db.StaffLabAssignments.Add(row);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return Ok(ToStaffAssignmentDto(row, built.User, built.Lab));
+    }
 
-        return Ok(new StaffAssignmentListItemDto
-        {
-            Id = row.Id,
-            UserId = user.Id,
-            StaffName = user.FullName,
-            StaffEmail = user.Email,
-            StaffRole = user.Role.ToString(),
-            LabId = lab.Id,
-            LabName = lab.Name,
-            DayOfWeek = row.DayOfWeek,
-            StartTime = row.StartTime,
-            EndTime = row.EndTime,
-            ValidFrom = row.ValidFrom,
-            ValidUntil = row.ValidUntil,
-            AssignmentSource = row.AssignmentSource,
-            IsActive = row.IsActive
-        });
+    [HttpPut("staff-assignments/{id:int}")]
+    public async Task<ActionResult<StaffAssignmentListItemDto>> UpdateStaffAssignment(
+        int id,
+        [FromBody] CreateStaffAssignmentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var row = await _db.StaffLabAssignments
+            .FirstOrDefaultAsync(a => a.Id == id && a.IsActive, cancellationToken)
+            .ConfigureAwait(false);
+        if (row == null)
+            return NotFound();
+
+        var (error, built) = await TryBuildAssignmentAsync(request, cancellationToken).ConfigureAwait(false);
+        if (error != null || built == null)
+            return BadRequest(error);
+
+        row.UserId = built.User.Id;
+        row.LabId = built.Lab.Id;
+        row.DayOfWeek = built.Day;
+        row.StartTime = built.Start;
+        row.EndTime = built.End;
+        row.ValidFrom = built.From;
+        row.ValidUntil = built.Until;
+        row.AssignmentSource = StaffAssignmentSource.ManualAdmin;
+
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return Ok(ToStaffAssignmentDto(row, built.User, built.Lab));
+    }
+
+    [HttpDelete("staff-assignments/{id:int}")]
+    public async Task<IActionResult> DeleteStaffAssignment(int id, CancellationToken cancellationToken)
+    {
+        var row = await _db.StaffLabAssignments
+            .FirstOrDefaultAsync(a => a.Id == id && a.IsActive, cancellationToken)
+            .ConfigureAwait(false);
+        if (row == null)
+            return NotFound();
+
+        row.IsActive = false;
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return NoContent();
     }
 
     [HttpPost("lab-change-requests/{id:int}/review")]
@@ -249,6 +278,108 @@ public class AdminController : ControllerBase
         await _sender.Send(new ReviewLabChangeRequestCommand(id, GetUserId(), request), cancellationToken).ConfigureAwait(false);
         return NoContent();
     }
+
+    [HttpGet("audit-logs")]
+    public async Task<ActionResult<IReadOnlyList<AuditLogDto>>> GetAuditLogs(CancellationToken cancellationToken)
+    {
+        var logs = await _db.AuditLogs
+            .AsNoTracking()
+            .Include(l => l.Lab)
+            .Include(l => l.User)
+            .OrderByDescending(l => l.CreatedAt)
+            .Take(200)
+            .Select(l => new AuditLogDto
+            {
+                Id = l.Id,
+                Action = l.Action,
+                Details = l.Details,
+                LabId = l.LabId,
+                LabName = l.Lab != null ? l.Lab.Name : null,
+                UserId = l.UserId,
+                UserFullName = l.User != null ? l.User.FullName : null,
+                UserEmail = l.User != null ? l.User.Email : null,
+                CreatedAt = l.CreatedAt
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return Ok(logs);
+    }
+
+    private sealed record BuiltStaffAssignment(
+        User User,
+        Lab Lab,
+        DayOfWeek? Day,
+        TimeSpan? Start,
+        TimeSpan? End,
+        DateTime? From,
+        DateTime? Until);
+
+    private async Task<(string? Error, BuiltStaffAssignment? Built)>
+        TryBuildAssignmentAsync(CreateStaffAssignmentRequest request, CancellationToken cancellationToken)
+    {
+        var email = request.StaffEmail.Trim();
+        var user = await _db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken)
+            .ConfigureAwait(false);
+        if (user == null)
+            return ($"Unknown staff email: {request.StaffEmail}", null);
+
+        if (user.Role != Role.Teacher && user.Role != Role.TeacherAssistant)
+            return ($"User {request.StaffEmail} is not Teacher or TeacherAssistant.", null);
+
+        var lab = await _db.Labs.AsNoTracking()
+            .FirstOrDefaultAsync(l => l.Id == request.LabId, cancellationToken)
+            .ConfigureAwait(false);
+        if (lab == null)
+            return ($"Unknown LabId {request.LabId}", null);
+
+        DayOfWeek? day = null;
+        if (request.DayOfWeek.HasValue)
+        {
+            if (request.DayOfWeek.Value < 0 || request.DayOfWeek.Value > 6)
+                return ("dayOfWeek must be 0 (Sunday) through 6 (Saturday).", null);
+            day = (DayOfWeek)request.DayOfWeek.Value;
+        }
+
+        var hasWeekly = day.HasValue && request.StartTime.HasValue && request.EndTime.HasValue;
+        var hasRange = request.ValidFrom.HasValue && request.ValidUntil.HasValue;
+        if (!hasWeekly && !hasRange)
+            return ("Provide either (dayOfWeek + startTime + endTime) or (validFrom + validUntil).", null);
+
+        if (hasWeekly && request.StartTime >= request.EndTime)
+            return ("For weekly schedule, startTime must be before endTime.", null);
+
+        if (hasRange && request.ValidFrom >= request.ValidUntil)
+            return ("For date range, validFrom must be before validUntil.", null);
+
+        return (null, new BuiltStaffAssignment(
+            user,
+            lab,
+            hasWeekly ? day : null,
+            hasWeekly ? request.StartTime : null,
+            hasWeekly ? request.EndTime : null,
+            hasRange ? request.ValidFrom : null,
+            hasRange ? request.ValidUntil : null));
+    }
+
+    private static StaffAssignmentListItemDto ToStaffAssignmentDto(StaffLabAssignment row, User user, Lab lab) => new()
+    {
+        Id = row.Id,
+        UserId = user.Id,
+        StaffName = user.FullName,
+        StaffEmail = user.Email,
+        StaffRole = user.Role.ToString(),
+        LabId = lab.Id,
+        LabName = lab.Name,
+        DayOfWeek = row.DayOfWeek.HasValue ? (int)row.DayOfWeek.Value : null,
+        StartTime = row.StartTime,
+        EndTime = row.EndTime,
+        ValidFrom = row.ValidFrom,
+        ValidUntil = row.ValidUntil,
+        AssignmentSource = row.AssignmentSource,
+        IsActive = row.IsActive
+    };
 
     private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 }

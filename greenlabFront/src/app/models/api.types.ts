@@ -31,6 +31,12 @@ export type CurrentLabApiRow = {
   id: number;
   name: string;
   inSession: boolean;
+  actualLightOn: boolean;
+  actualFanOn: boolean;
+  lightRuntimeSeconds?: number;
+  fanRuntimeSeconds?: number;
+  currentWatts?: number;
+  energyKwh?: number;
 } & Record<string, unknown>;
 
 export function readLabOverride(row: Record<string, unknown>): LabOverrideDto | null {
@@ -46,6 +52,12 @@ export type LabOverviewApiRow = {
   lastOccupancyCount: number;
   lastOccupancyAt: string | null;
   inSession: boolean;
+  actualLightOn: boolean;
+  actualFanOn: boolean;
+  lightRuntimeSeconds?: number;
+  fanRuntimeSeconds?: number;
+  currentWatts?: number;
+  energyKwh?: number;
 } & Record<string, unknown>;
 
 /** LabDeviceDto */
@@ -123,7 +135,8 @@ export interface StaffAssignmentRow {
   staffRole: string;
   labId: number;
   labName: string;
-  dayOfWeek: number | null;
+  /** 0=Sunday … 6=Saturday (API may historically send enum name string). */
+  dayOfWeek: number | string | null;
   startTime: string | null;
   endTime: string | null;
   validFrom: string | null;
@@ -141,3 +154,50 @@ export interface CreateStaffAssignmentRequest {
   validFrom?: string;
   validUntil?: string;
 }
+
+export interface AuditLogDto {
+  id: number;
+  action: string;
+  details: string | null;
+  labId: number | null;
+  labName: string | null;
+  userId: number | null;
+  userFullName: string | null;
+  userEmail: string | null;
+  createdAt: string;
+}
+
+export type LabChangeRequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'AutoApproved';
+
+export interface LabChangeRequestDto {
+  id: number;
+  requestedByUserId: number;
+  requestedByName: string;
+  fromLabId: number;
+  fromLabName: string;
+  toLabId: number;
+  toLabName: string;
+  sectionStart: string;
+  sectionEnd: string;
+  status: LabChangeRequestStatus | string;
+  createdAt: string;
+  reviewNote: string | null;
+}
+
+export interface CreateLabChangeRequestDto {
+  fromLabId: number;
+  toLabId: number;
+  sectionStart: string;
+  sectionEnd: string;
+}
+
+export interface ReviewLabChangeRequestDto {
+  approve: boolean;
+  note?: string;
+}
+
+export interface LabOptionDto {
+  id: number;
+  name: string;
+}
+

@@ -17,6 +17,9 @@
   </p>
 
   <form class="form-card staff-form" *ngIf="showForm" (ngSubmit)="submit()">
+    <h2 class="form-title">
+      {{ (isEditing ? 'ADMIN.STAFF.EDIT_TITLE' : 'ADMIN.STAFF.ADD_TITLE') | translate }}
+    </h2>
     <div class="form-row">
       <label>{{ 'ADMIN.STAFF.FIELD_STAFF' | translate }}</label>
       <select [(ngModel)]="staffEmail" name="staffEmail" required>
@@ -71,7 +74,10 @@
     </ng-container>
     <div class="form-actions">
       <button type="submit" class="btn-primary" [disabled]="saving || !staffEmail">
-        {{ 'ADMIN.STAFF.SAVE' | translate }}
+        {{ (isEditing ? 'ADMIN.STAFF.UPDATE' : 'ADMIN.STAFF.SAVE') | translate }}
+      </button>
+      <button type="button" class="btn-secondary" (click)="cancelForm()" [disabled]="saving">
+        {{ 'ADMIN.STAFF.CANCEL' | translate }}
       </button>
     </div>
   </form>
@@ -85,6 +91,7 @@
           <th>{{ 'ADMIN.STAFF.COL_LAB' | translate }}</th>
           <th>{{ 'ADMIN.STAFF.COL_SCHEDULE' | translate }}</th>
           <th>{{ 'ADMIN.STAFF.COL_SOURCE' | translate }}</th>
+          <th>{{ 'ADMIN.STAFF.COL_ACTIONS' | translate }}</th>
         </tr>
       </thead>
       <tbody>
@@ -106,6 +113,20 @@
             <ng-container *ngIf="!isWeekly(r) && !isDateRange(r)">—</ng-container>
           </td>
           <td>{{ sourceKey(r.assignmentSource) | translate }}</td>
+          <td>
+            <div class="row-actions">
+              <button type="button" class="btn-secondary btn-sm" (click)="startEdit(r)">
+                {{ 'ADMIN.STAFF.EDIT' | translate }}
+              </button>
+              <button
+                type="button"
+                class="btn-danger btn-sm"
+                [disabled]="deletingId === r.id"
+                (click)="deleteRow(r)">
+                {{ 'ADMIN.STAFF.DELETE' | translate }}
+              </button>
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>

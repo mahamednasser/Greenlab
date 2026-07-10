@@ -105,3 +105,15 @@
 .kwh-hl { color: var(--green-primary); font-weight: 700; }
 
 @media (max-width: 768px) { .labs-grid { grid-template-columns: 1fr; } }
+
+.occupancy-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+

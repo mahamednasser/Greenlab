@@ -1,7 +1,9 @@
 // Layer: Application
 // Responsibility: Handles device event and legacy device command use cases.
+using Greenlab.Application.Common;
 using Greenlab.Application.Common.Interfaces;
 using Greenlab.Application.DTOs;
+using Greenlab.Domain.Entities;
 using Greenlab.Domain.Exceptions;
 using Greenlab.Domain.Interfaces;
 using MediatR;
@@ -23,12 +25,18 @@ public class HandleDeviceEventCommandHandler : IRequestHandler<HandleDeviceEvent
 {
     private readonly ILabRepository _labs;
     private readonly ICrowdCountClient _crowd;
+    private readonly IAuditLogRepository _auditLogs;
     private readonly IUnitOfWork _unitOfWork;
 
-    public HandleDeviceEventCommandHandler(ILabRepository labs, ICrowdCountClient crowd, IUnitOfWork unitOfWork)
+    public HandleDeviceEventCommandHandler(
+        ILabRepository labs, 
+        ICrowdCountClient crowd, 
+        IAuditLogRepository auditLogs,
+        IUnitOfWork unitOfWork)
     {
         _labs = labs;
         _crowd = crowd;
+        _auditLogs = auditLogs;
         _unitOfWork = unitOfWork;
     }
 
@@ -50,8 +58,7 @@ public class HandleDeviceEventCommandHandler : IRequestHandler<HandleDeviceEvent
         var controlOverride = lab.ControlOverride;
         if (controlOverride?.MotionSensorDisabled == true && request.Request.MotionDetected)
         {
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return new DeviceEventResponse
+            var responseIgnored = new DeviceEventResponse
             {
                 LightOn = controlOverride.ForceLightOn ?? false,
                 FanOn = controlOverride.ForceFanOn ?? false,
@@ -60,6 +67,10 @@ public class HandleDeviceEventCommandHandler : IRequestHandler<HandleDeviceEvent
                 MotionIgnored = true,
                 OccupancyCount = lab.LastOccupancyCount
             };
+            LabDeviceStateCache.SetState(request.LabId, responseIgnored.LightOn, responseIgnored.FanOn);
+            await LogEventToAuditAsync(request.LabId, request.Request, responseIgnored, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return responseIgnored;
         }
 
         var count = lab.LastOccupancyCount;
@@ -80,9 +91,7 @@ public class HandleDeviceEventCommandHandler : IRequestHandler<HandleDeviceEvent
                 fanAuto = true;
         }
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-        return new DeviceEventResponse
+        var response = new DeviceEventResponse
         {
             LightOn = controlOverride?.ForceLightOn ?? lightAuto,
             FanOn = controlOverride?.ForceFanOn ?? fanAuto,
@@ -91,6 +100,46 @@ public class HandleDeviceEventCommandHandler : IRequestHandler<HandleDeviceEvent
             MotionIgnored = false,
             OccupancyCount = count
         };
+        LabDeviceStateCache.SetState(request.LabId, response.LightOn, response.FanOn);
+        await LogEventToAuditAsync(request.LabId, request.Request, response, cancellationToken).ConfigureAwait(false);
+        await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return response;
+    }
+
+    private async Task LogEventToAuditAsync(int labId, DeviceEventRequest request, DeviceEventResponse response, CancellationToken cancellationToken)
+    {
+        var detailsObject = new
+        {
+            الحدث = new
+            {
+                الحركة = request.MotionDetected ? "تم رصد حركة" : "لا يوجد حركة",
+                مستوى_الإضاءة_LDR = request.LdrValue,
+                درجة_الحرارة = request.TemperatureCelsius,
+                الرطوبة = request.Humidity,
+                المسافة_سم = request.DistanceCm
+            },
+            القرار_والاستجابة = new
+            {
+                حالة_الإضاءة = response.LightOn ? "تشغيل" : "إطفاء",
+                حالة_المروحة = response.FanOn ? "تشغيل" : "إطفاء",
+                تجاهل_الحركة = response.MotionIgnored ? "نعم" : "لا",
+                عدد_الأشخاص_المتواجدين = response.OccupancyCount
+            }
+        };
+
+        var detailsJson = System.Text.Json.JsonSerializer.Serialize(detailsObject, new System.Text.Json.JsonSerializerOptions
+        {
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        });
+
+        await _auditLogs.AddAsync(new AuditLog
+        {
+            Action = "DeviceEvent",
+            LabId = labId,
+            UserId = null,
+            Details = detailsJson,
+            CreatedAt = DateTime.UtcNow
+        }, cancellationToken).ConfigureAwait(false);
     }
 }
 

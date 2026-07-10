@@ -1,8 +1,8 @@
-﻿<div class="admin-page">
+<div class="admin-page">
   <div class="page-header">
     <div>
-      <h1>{{ 'ADMIN.LAB_FORM.TITLE' | translate }}</h1>
-      <p class="sub">{{ 'ADMIN.LAB_FORM.SUB' | translate }}</p>
+      <h1>{{ (isEdit ? 'ADMIN.LAB_FORM.EDIT_TITLE' : 'ADMIN.LAB_FORM.TITLE') | translate }}</h1>
+      <p class="sub">{{ (isEdit ? 'ADMIN.LAB_FORM.EDIT_SUB' : 'ADMIN.LAB_FORM.SUB') | translate }}</p>
     </div>
   </div>
 
@@ -33,11 +33,14 @@
       <label>{{ 'ADMIN.LAB_FORM.FIELD_CAMERA' | translate }}</label>
       <input [(ngModel)]="cameraRtspUrl" name="cameraRtspUrl" />
     </div>
-    <div class="form-actions">
+    <div class="form-actions" style="display: flex; gap: 8px; align-items: center;">
       <button type="submit" class="btn-primary" [disabled]="saving || !name.trim()">
         {{ (saving ? 'ADMIN.LAB_FORM.SAVING' : 'ADMIN.LAB_FORM.SUBMIT') | translate }}
       </button>
-      <a routerLink="/labs" class="btn-secondary">{{ 'ADMIN.LAB_FORM.CANCEL' | translate }}</a>
+      <button *ngIf="isEdit" type="button" (click)="deleteLab()" [disabled]="saving" class="btn-danger" style="background: #dc2626; color: #fff; border: none; padding: 10px 22px; border-radius: var(--r-xl); font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s;">
+        {{ 'ADMIN.LAB_FORM.DELETE' | translate }}
+      </button>
+      <a routerLink="/labs" class="btn-secondary" style="margin-inline-start: auto;">{{ 'ADMIN.LAB_FORM.CANCEL' | translate }}</a>
     </div>
   </form>
 </div>

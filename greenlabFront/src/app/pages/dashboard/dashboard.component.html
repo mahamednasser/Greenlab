@@ -18,9 +18,9 @@
           </svg>
         </div>
         <div>
-          <p class="stat-num">{{ vm.displayKwhTotal }} <span class="unit">{{ 'DASHBOARD.KWH' | translate }}</span></p>
+          <p class="stat-num">{{ vm.displayKwhTotal | number:'1.2-4' }} <span class="unit">{{ 'DASHBOARD.KWH' | translate }}</span></p>
           <p class="stat-lbl">{{ 'DASHBOARD.STAT_TOTAL' | translate }}</p>
-          <p class="trend up">{{ 'DASHBOARD.STAT_TOTAL_HINT' | translate }}</p>
+          <p class="trend up">{{ 'DASHBOARD.STAT_TOTAL_HINT' | translate:{ watts: vm.totalWatts } }}</p>
         </div>
       </div>
 
@@ -32,27 +32,22 @@
           </svg>
         </div>
         <div>
-          <p class="stat-num">{{ vm.displayKwhSaved }} <span class="unit">{{ 'DASHBOARD.KWH' | translate }}</span></p>
-          <p class="stat-lbl">{{ 'DASHBOARD.STAT_SAVED' | translate }}</p>
-          <p class="trend down">{{ 'DASHBOARD.STAT_SAVED_HINT' | translate }}</p>
+          <p class="stat-num">{{ lightRuntimeLabel }}</p>
+          <p class="stat-lbl">{{ 'DASHBOARD.STAT_LIGHT_TIME' | translate }}</p>
+          <p class="trend down">{{ 'DASHBOARD.STAT_LIGHT_HINT' | translate:{ watts: 20 } }}</p>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon" style="background:#fff1f2">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#f43f5e" stroke-width="1.8">
-            <rect x="3" y="3" width="14" height="14" rx="3"/>
-            <path d="M3 8h14M8 3v5M12 3v5"/>
+            <path d="M10 2v4M6 5l2 2M14 5l-2 2M5 10h10M7 14h6M8 17h4"/>
           </svg>
         </div>
         <div>
-          <p class="stat-num">
-            <ng-container *ngIf="vm.deviceTotal">{{ vm.deviceActive }} <span class="unit red">{{ 'DASHBOARD.STAT_DEVICES_ON' | translate }}</span></ng-container>
-            <ng-container *ngIf="!vm.deviceTotal">—</ng-container>
-          </p>
-          <p class="stat-lbl">{{ 'DASHBOARD.STAT_DEVICES' | translate }}</p>
-          <p class="trend red" *ngIf="vm.deviceTotal">{{ 'DASHBOARD.STAT_DEVICES_HINT' | translate:{ inactive: vm.deviceIdleOrOff, total: vm.deviceTotal } }}</p>
-          <p class="trend gray" *ngIf="!vm.deviceTotal">{{ 'DASHBOARD.STAT_DEVICES_STAFF' | translate }}</p>
+          <p class="stat-num">{{ fanRuntimeLabel }}</p>
+          <p class="stat-lbl">{{ 'DASHBOARD.STAT_FAN_TIME' | translate }}</p>
+          <p class="trend red">{{ 'DASHBOARD.STAT_FAN_HINT' | translate:{ watts: 70 } }}</p>
         </div>
       </div>
 
@@ -67,7 +62,7 @@
         <div>
           <p class="stat-num">{{ vm.activeLabCount }} <span class="unit gray">/ {{ vm.totalLabs }}</span></p>
           <p class="stat-lbl">{{ 'DASHBOARD.STAT_LABS' | translate }}</p>
-          <p class="trend yellow">{{ 'DASHBOARD.STAT_LABS_HINT' | translate:{ idle: vm.idleLabCount } }}</p>
+          <p class="trend yellow">{{ 'DASHBOARD.STAT_LABS_HINT' | translate:{ idle: vm.idleLabCount, watts: vm.totalWatts } }}</p>
         </div>
       </div>
 
@@ -82,7 +77,7 @@
             <p class="card-sub">{{ 'DASHBOARD.CHART_WEEK_SUB' | translate }}</p>
           </div>
         </div>
-        <div class="line-wrap">
+        <div class="line-wrap" *ngIf="weekPoints.length">
           <svg class="line-svg" viewBox="0 0 560 190" preserveAspectRatio="none">
             <defs>
               <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
@@ -94,17 +89,15 @@
             <line x1="0" y1="78"  x2="560" y2="78"  stroke="#f3f4f6" stroke-width="1"/>
             <line x1="0" y1="118" x2="560" y2="118" stroke="#f3f4f6" stroke-width="1"/>
             <line x1="0" y1="158" x2="560" y2="158" stroke="#f3f4f6" stroke-width="1"/>
-            <path d="M0,155 C50,158 80,162 133,148 C186,130 210,58 280,38 C330,26 370,52 400,72 C430,90 490,152 560,158 L560,190 L0,190 Z"
-                  fill="url(#blueGrad)"/>
-            <path d="M0,155 C50,158 80,162 133,148 C186,130 210,58 280,38 C330,26 370,52 400,72 C430,90 490,152 560,158"
-                  fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="0"   cy="155" r="4" fill="#fff" stroke="#3b82f6" stroke-width="2"/>
-            <circle cx="93"  cy="150" r="4" fill="#fff" stroke="#3b82f6" stroke-width="2"/>
-            <circle cx="186" cy="134" r="4" fill="#fff" stroke="#3b82f6" stroke-width="2"/>
-            <circle cx="280" cy="38"  r="5" fill="#3b82f6" stroke="#fff" stroke-width="2.5"/>
-            <circle cx="373" cy="58"  r="4" fill="#fff" stroke="#3b82f6" stroke-width="2"/>
-            <circle cx="466" cy="150" r="4" fill="#fff" stroke="#3b82f6" stroke-width="2"/>
-            <circle cx="560" cy="158" r="4" fill="#fff" stroke="#3b82f6" stroke-width="2"/>
+            <path [attr.d]="weekAreaPath" fill="url(#blueGrad)"/>
+            <path [attr.d]="weekLinePath" fill="none" stroke="#3b82f6" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+            <circle *ngFor="let p of weekPoints; let i = index"
+                    [attr.cx]="p.x" [attr.cy]="p.y"
+                    [attr.r]="i === todayIdx ? 5 : 4"
+                    [attr.fill]="i === todayIdx ? '#3b82f6' : '#fff'"
+                    stroke="#3b82f6"
+                    [attr.stroke-width]="i === todayIdx ? 2.5 : 2"/>
           </svg>
           <div class="x-axis">
             <span *ngFor="let d of vm.weekData">{{ d.day }}</span>
@@ -115,17 +108,25 @@
       <div class="card bar-card">
         <h3>{{ 'DASHBOARD.CHART_USAGE_TITLE' | translate }}</h3>
         <p class="card-sub">{{ 'DASHBOARD.CHART_USAGE_SUB' | translate:{ max: chartMax } }}</p>
-        <div class="bar-chart">
+        <div class="bar-chart" *ngIf="vm.labUsage.length; else noUsage">
           <div class="y-axis">
-            <span>{{ chartMax }}</span><span>{{ (chartMax * 0.75) | number:'1.0-0' }}</span><span>{{ (chartMax * 0.5) | number:'1.0-0' }}</span><span>{{ (chartMax * 0.25) | number:'1.0-0' }}</span><span>0</span>
+            <span>{{ chartMax | number:'1.0-3' }}</span>
+            <span>{{ (chartMax * 0.75) | number:'1.0-3' }}</span>
+            <span>{{ (chartMax * 0.5) | number:'1.0-3' }}</span>
+            <span>{{ (chartMax * 0.25) | number:'1.0-3' }}</span>
+            <span>0</span>
           </div>
           <div class="bars">
             <div class="bar-col" *ngFor="let b of vm.labUsage">
+              <span class="bar-val">{{ b.val | number:'1.2-3' }}</span>
               <div class="bar-fill" [style.height.%]="barHeightPct(b.val)"></div>
               <span class="bar-lbl">{{ b.lab }}</span>
             </div>
           </div>
         </div>
+        <ng-template #noUsage>
+          <p class="state-msg">{{ 'DASHBOARD.CHART_USAGE_EMPTY' | translate }}</p>
+        </ng-template>
       </div>
 
     </div>
@@ -155,9 +156,8 @@
             <div class="alert-text">
               <p class="alert-title">{{ a.title }}</p>
               <p class="alert-desc">{{ a.desc }}</p>
-              <p class="alert-time">🕐 {{ a.time }}</p>
+              <p class="alert-time">{{ a.time }}</p>
             </div>
-            <button type="button" class="alert-x" aria-label="Dismiss">✕</button>
           </div>
         </div>
       </div>
@@ -178,7 +178,7 @@
           </div>
           <p>
             {{ 'DASHBOARD.TIP_BEFORE' | translate }}
-            <strong>{{ vm.labs[0].name }}</strong>
+            <strong>{{ 'DASHBOARD.TIP_LOADS' | translate }}</strong>
             {{ 'DASHBOARD.TIP_AFTER' | translate }}
           </p>
         </div>

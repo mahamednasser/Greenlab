@@ -27,8 +27,10 @@ export class StaffComponent implements OnInit {
   errorMsg: string | null = null;
   successMsg: string | null = null;
   saving = false;
+  deletingId: number | null = null;
 
   showForm = false;
+  editingId: number | null = null;
   staffEmail = '';
   labId = 0;
   dayOfWeek = 1;
@@ -77,9 +79,23 @@ export class StaffComponent implements OnInit {
     });
   }
 
-  dayLabel(day: number | null): string {
-    if (day == null) return 'MONDAY';
-    return DAY_KEYS[day] ?? 'MONDAY';
+  /** Normalize API day (number or enum name) to 0–6. */
+  private normalizeDay(day: number | string | null | undefined): number | null {
+    if (day == null || day === '') return null;
+    if (typeof day === 'number' && Number.isFinite(day)) {
+      return day >= 0 && day <= 6 ? day : null;
+    }
+    const asNum = Number(day);
+    if (Number.isFinite(asNum) && asNum >= 0 && asNum <= 6) return asNum;
+    const key = String(day).trim().toUpperCase();
+    const idx = DAY_KEYS.indexOf(key);
+    return idx >= 0 ? idx : null;
+  }
+
+  dayLabel(day: number | string | null): string {
+    const n = this.normalizeDay(day);
+    if (n == null) return 'MONDAY';
+    return DAY_KEYS[n] ?? 'MONDAY';
   }
 
   formatTime(value: string | null): string {
@@ -88,7 +104,7 @@ export class StaffComponent implements OnInit {
   }
 
   isWeekly(row: StaffAssignmentRow): boolean {
-    return row.dayOfWeek != null && !!row.startTime && !!row.endTime;
+    return this.normalizeDay(row.dayOfWeek) != null && !!row.startTime && !!row.endTime;
   }
 
   isDateRange(row: StaffAssignmentRow): boolean {
@@ -101,6 +117,14 @@ export class StaffComponent implements OnInit {
     return d.toLocaleDateString();
   }
 
+  private toLocalInput(iso: string | null): string {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
   sourceKey(source: string): string {
     return `ADMIN.STAFF.SOURCES.${source.toUpperCase()}`;
   }
@@ -109,9 +133,79 @@ export class StaffComponent implements OnInit {
     return `ADMIN.ROLES.${role.toUpperCase()}`;
   }
 
+  get isEditing(): boolean {
+    return this.editingId != null;
+  }
+
+  private resetFormFields(): void {
+    this.editingId = null;
+    this.dayOfWeek = 1;
+    this.startTime = '09:00';
+    this.endTime = '17:00';
+    this.useDateRange = false;
+    this.validFrom = '';
+    this.validUntil = '';
+    if (this.staffUsers.length) this.staffEmail = this.staffUsers[0].email;
+    if (this.labs.length) this.labId = this.labs[0].id;
+  }
+
   toggleForm(): void {
-    this.showForm = !this.showForm;
+    if (this.showForm) {
+      this.showForm = false;
+      this.resetFormFields();
+    } else {
+      this.resetFormFields();
+      this.showForm = true;
+    }
     this.successMsg = null;
+    this.errorMsg = null;
+  }
+
+  cancelForm(): void {
+    this.showForm = false;
+    this.resetFormFields();
+    this.errorMsg = null;
+  }
+
+  startEdit(row: StaffAssignmentRow): void {
+    this.editingId = row.id;
+    this.staffEmail = row.staffEmail;
+    this.labId = row.labId;
+    this.successMsg = null;
+    this.errorMsg = null;
+
+    if (this.isWeekly(row)) {
+      this.useDateRange = false;
+      this.dayOfWeek = this.normalizeDay(row.dayOfWeek) ?? 1;
+      this.startTime = this.formatTime(row.startTime) || '09:00';
+      this.endTime = this.formatTime(row.endTime) || '17:00';
+      this.validFrom = '';
+      this.validUntil = '';
+    } else {
+      this.useDateRange = true;
+      this.validFrom = this.toLocalInput(row.validFrom);
+      this.validUntil = this.toLocalInput(row.validUntil);
+    }
+    this.showForm = true;
+  }
+
+  deleteRow(row: StaffAssignmentRow): void {
+    if (!confirm(`Delete schedule for ${row.staffName} / ${row.labName}?`)) return;
+    this.deletingId = row.id;
+    this.errorMsg = null;
+    this.successMsg = null;
+    this.admin.deleteStaffAssignment(row.id).subscribe({
+      next: () => {
+        this.deletingId = null;
+        this.successMsg = 'ADMIN.STAFF.DELETED';
+        if (this.editingId === row.id) this.cancelForm();
+        this.fetch();
+      },
+      error: () => {
+        this.deletingId = null;
+        this.errorMsg = 'ADMIN.STAFF.DELETE_ERROR';
+      },
+    });
   }
 
   submit(): void {
@@ -139,11 +233,16 @@ export class StaffComponent implements OnInit {
       body.endTime = `${this.endTime}:00`;
     }
 
-    this.admin.createStaffAssignment(body).subscribe({
+    const req$ = this.editingId != null
+      ? this.admin.updateStaffAssignment(this.editingId, body)
+      : this.admin.createStaffAssignment(body);
+
+    req$.subscribe({
       next: () => {
         this.saving = false;
-        this.successMsg = 'ADMIN.STAFF.SAVED';
+        this.successMsg = this.editingId != null ? 'ADMIN.STAFF.UPDATED' : 'ADMIN.STAFF.SAVED';
         this.showForm = false;
+        this.resetFormFields();
         this.fetch();
       },
       error: () => {

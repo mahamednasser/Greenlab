@@ -35,6 +35,13 @@
       </svg>
     </a>
 
+    <a class="nav-item" *ngIf="auth.isStaff()" routerLink="/staff/lab-change" routerLinkActive="active">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M3 9h12M9 3l6 6-6 6"/>
+      </svg>
+      {{ 'NAV.LAB_CHANGE' | translate }}
+    </a>
+
     <ng-container *ngIf="auth.isAdmin()">
       <p class="nav-section-label" style="margin-top:18px">{{ 'NAV.ADMIN' | translate }}</p>
 
@@ -71,32 +78,29 @@
         {{ 'NAV.STAFF' | translate }}
       </a>
 
+      <a class="nav-item" routerLink="/admin/lab-change-requests" routerLinkActive="active">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M3 9h12M9 3l6 6-6 6"/>
+        </svg>
+        {{ 'NAV.LAB_CHANGE_REQUESTS' | translate }}
+      </a>
+
       <a class="nav-item" routerLink="/admin/labs/new" routerLinkActive="active">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
           <path d="M9 3v12M3 9h12"/>
         </svg>
         {{ 'NAV.ADD_LAB' | translate }}
       </a>
+
+      <a class="nav-item" routerLink="/admin/audit-logs" routerLinkActive="active">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M12 2H3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V6l-4-4z"/>
+          <path d="M11 2v4h4"/>
+          <path d="M5 7h5M5 10h8M5 13h8"/>
+        </svg>
+        {{ 'NAV.AUDIT_LOGS' | translate }}
+      </a>
     </ng-container>
-
-    <p class="nav-section-label" style="margin-top:18px">{{ 'NAV.ACCOUNT' | translate }}</p>
-
-    <a class="nav-item" routerLink="/alerts" routerLinkActive="active">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
-        <path d="M9 2a5 5 0 00-5 5v3L2.5 13h13L14 10V7a5 5 0 00-5-5z"/>
-        <path d="M7 13v.5a2 2 0 004 0V13"/>
-      </svg>
-      {{ 'NAV.ALERTS' | translate }}
-      <span class="alert-badge">3</span>
-    </a>
-
-    <a class="nav-item" routerLink="/settings" routerLinkActive="active">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
-        <circle cx="9" cy="9" r="2.5"/>
-        <path d="M9 1.5v1.5M9 15v1.5M1.5 9H3M15 9h1.5M4.1 4.1l1 1M12.9 12.9l1 1M13.9 4.1l-1 1M5.1 12.9l-1 1"/>
-      </svg>
-      {{ 'NAV.SETTINGS' | translate }}
-    </a>
   </nav>
 
   <div class="user-row">

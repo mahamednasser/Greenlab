@@ -16,7 +16,7 @@ public class StaffLabAssignmentRepository : Repository<StaffLabAssignment>, ISta
     {
         return await DbContext.StaffLabAssignments
             .AsNoTracking()
-            .Where(a => a.UserId == userId)
+            .Where(a => a.UserId == userId && a.IsActive)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
     }
 }

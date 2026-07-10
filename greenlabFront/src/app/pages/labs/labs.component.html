@@ -28,6 +28,12 @@
           <p class="floor">{{ lab.floor }}</p>
         </div>
         <div class="lab-top-right">
+          <span class="occupancy-badge" title="Current occupancy">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle; margin-inline-end: 4px; display: inline-block;">
+              <path d="M8 8a3 3 0 100-6 3 3 0 000 6zm-5 6c0-2.5 3-4 5-4s5 1.5 5 4"/>
+            </svg>
+            <span style="font-weight: 600;">{{ lab.peopleCount }}</span>
+          </span>
           <span class="status-badge" [class]="badgeClass(lab.status)">
             <span class="sdot"></span>{{ statusKey(lab.status) | translate }}
           </span>
@@ -39,7 +45,7 @@
 
       <div class="energy-row">
         <p class="energy-lbl">{{ 'LABS.ENERGY' | translate }}</p>
-        <p class="energy-val">{{ 'LABS.KWH_PAIR' | translate:{ used: lab.energyUsed, max: lab.energyMax } }}</p>
+        <p class="energy-val">{{ 'LABS.KWH_PAIR' | translate:{ kwh: (lab.energyKwh | number:'1.2-3'), used: lab.energyUsed, max: lab.energyMax } }}</p>
       </div>
       <div class="energy-track">
         <div class="energy-fill"

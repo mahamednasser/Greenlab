@@ -147,3 +147,17 @@ public class CreateStaffAssignmentRequest
   public DateTime? ValidFrom { get; set; }
   public DateTime? ValidUntil { get; set; }
 }
+
+public class AuditLogDto
+{
+    public int Id { get; set; }
+    public string Action { get; set; } = string.Empty;
+    public string? Details { get; set; }
+    public int? LabId { get; set; }
+    public string? LabName { get; set; }
+    public int? UserId { get; set; }
+    public string? UserFullName { get; set; }
+    public string? UserEmail { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+

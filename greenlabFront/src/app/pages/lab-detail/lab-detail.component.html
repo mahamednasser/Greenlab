@@ -4,12 +4,20 @@
   <p *ngIf="errorMsg" class="state-msg err">{{ errorMsg | translate }}</p>
   <p *ngIf="showStaffNote && !loading" class="state-msg staff">{{ 'LAB_DETAIL.STAFF_NOTE' | translate }}</p>
 
-  <a class="back-link" routerLink="/labs" *ngIf="!loading">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M10 3L5 8l5 5"/>
-    </svg>
-    {{ 'LAB_DETAIL.BACK' | translate }}
-  </a>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;" *ngIf="!loading">
+    <a class="back-link" routerLink="/labs" style="margin: 0;">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10 3L5 8l5 5"/>
+      </svg>
+      {{ 'LAB_DETAIL.BACK' | translate }}
+    </a>
+    <a *ngIf="isAdmin" class="btn-primary" [routerLink]="['/admin/labs', labId, 'edit']" style="padding: 6px 14px; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; border-radius: var(--r-md); background: var(--green-primary); color: #fff; cursor: pointer; transition: background .15s; border: none; box-shadow: var(--sh-sm);">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle;">
+        <path d="M11 2l3 3L5 14H2v-3L11 2z"/>
+      </svg>
+      {{ 'ADMIN.LAB_FORM.EDIT_TITLE' | translate }}
+    </a>
+  </div>
 
   <div class="hero-card" *ngIf="!loading && !errorMsg">
     <div class="hero-left">
@@ -48,7 +56,7 @@
             transform="rotate(-90 65 65)"/>
         </svg>
         <div class="gauge-center">
-          <span class="gauge-num">{{ energyUsed }}</span>
+          <span class="gauge-num">{{ energyUsed | number:'1.2-3' }}</span>
           <span class="gauge-unit">{{ 'LAB_DETAIL.KWH' | translate }}</span>
         </div>
       </div>
@@ -56,9 +64,55 @@
     </div>
   </div>
 
-  <h3 class="section-title" *ngIf="!loading && !errorMsg">{{ 'LAB_DETAIL.DEVICES' | translate:{ count: devices.length } }}</h3>
+  <div class="controls-card" *ngIf="!loading && !errorMsg">
+    <h3 class="controls-title">{{ 'LAB_DETAIL.CONTROLS_TITLE' | translate }}</h3>
+    <p class="controls-sub">{{ 'LAB_DETAIL.CONTROLS_SUB' | translate }}</p>
+    <p *ngIf="controlError" class="state-msg err">{{ controlError | translate }}</p>
+    <div class="controls-row">
+      <button
+        type="button"
+        class="control-btn"
+        [class.on]="lightOn"
+        [disabled]="lightBusy"
+        (click)="toggleLight()">
+        <span class="control-ico light">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="11" cy="9.5" r="4"/>
+            <path d="M11 2v1.5M11 17v1.5M4 9.5H5.5M16.5 9.5H18M6 5l1 1M14 14l1 1M16 5l-1 1M8 14l-1 1"/>
+          </svg>
+        </span>
+        <span class="control-text">
+          <span class="control-name">{{ 'LAB_DETAIL.LIGHT' | translate }}</span>
+          <span class="control-meta">{{ lightWatts }}W · {{ (lightOn ? 'LABS.TAG_ON' : 'LABS.TAG_OFF') | translate }}</span>
+        </span>
+        <span class="control-switch" [class.on]="lightOn"><span class="thumb"></span></span>
+      </button>
 
-  <div class="devices-grid" *ngIf="!loading && !errorMsg">
+      <button
+        type="button"
+        class="control-btn"
+        [class.on]="fanOn"
+        [disabled]="fanBusy"
+        (click)="toggleFan()">
+        <span class="control-ico fan">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M11 4v3M11 15v3M4 11h3M15 11h3"/>
+            <circle cx="11" cy="11" r="3"/>
+          </svg>
+        </span>
+        <span class="control-text">
+          <span class="control-name">{{ 'LAB_DETAIL.FAN' | translate }}</span>
+          <span class="control-meta">{{ fanWatts }}W · {{ (fanOn ? 'LABS.TAG_ON' : 'LABS.TAG_OFF') | translate }}</span>
+        </span>
+        <span class="control-switch" [class.on]="fanOn"><span class="thumb"></span></span>
+      </button>
+    </div>
+  </div>
+
+  <h3 class="section-title" *ngIf="!loading && !errorMsg && isAdmin">{{ 'LAB_DETAIL.DEVICES' | translate:{ count: devices.length } }}</h3>
+
+  <div class="devices-grid" *ngIf="!loading && !errorMsg && isAdmin && devices.length">
     <div class="device-card" *ngFor="let d of devices">
 
       <div class="device-top">
@@ -86,10 +140,6 @@
           <p class="device-name">{{ d.name }}</p>
           <span class="status-lbl" [class]="statusLblClass(d.statusLabel)">{{ tagKey(d.statusLabel) | translate }}</span>
         </div>
-
-        <button type="button" class="toggle" [class.on]="d.isOn" (click)="d.isOn = !d.isOn">
-          <span class="thumb"></span>
-        </button>
       </div>
 
       <div class="device-bottom">

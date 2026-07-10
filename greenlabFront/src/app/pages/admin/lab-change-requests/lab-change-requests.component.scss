@@ -1,0 +1,39 @@
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-med);
+  }
+
+  select {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    font-size: 14px;
+    background: #fff;
+  }
+}
+
+.note-card {
+  max-width: 640px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-sm {
+  padding: 7px 14px;
+  font-size: 12.5px;
+}
+
+.badge.pending {
+  background: #fef3c7;
+  color: #b45309;
+}

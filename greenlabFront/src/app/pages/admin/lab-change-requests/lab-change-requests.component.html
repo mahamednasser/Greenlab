@@ -1,0 +1,92 @@
+<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>{{ 'ADMIN.LAB_CHANGE.TITLE' | translate }}</h1>
+      <p class="sub">{{ 'ADMIN.LAB_CHANGE.SUB' | translate }}</p>
+    </div>
+  </div>
+
+  <div class="filters">
+    <label>{{ 'ADMIN.LAB_CHANGE.FILTER_STATUS' | translate }}</label>
+    <select [(ngModel)]="statusFilter" name="statusFilter" (ngModelChange)="fetch()">
+      <option value="">{{ 'ADMIN.LAB_CHANGE.FILTER_ALL' | translate }}</option>
+      <option *ngFor="let s of statusOptions" [value]="s">
+        {{ ('STAFF.LAB_CHANGE.STATUS.' + s.toUpperCase()) | translate }}
+      </option>
+    </select>
+  </div>
+
+  <p *ngIf="loading" class="state-msg">{{ 'ADMIN.LAB_CHANGE.LOADING' | translate }}</p>
+  <p *ngIf="errorMsg" class="state-msg err">{{ errorMsg | translate }}</p>
+  <p *ngIf="successMsg" class="state-msg ok">{{ successMsg | translate }}</p>
+  <p *ngIf="!loading && !errorMsg && rows.length === 0" class="state-msg">
+    {{ 'ADMIN.LAB_CHANGE.EMPTY' | translate }}
+  </p>
+
+  <div class="form-card note-card" *ngIf="hasPending">
+    <div class="form-row">
+      <label>{{ 'ADMIN.LAB_CHANGE.FIELD_NOTE' | translate }}</label>
+      <input
+        type="text"
+        [(ngModel)]="reviewNote"
+        name="reviewNote"
+        [placeholder]="'ADMIN.LAB_CHANGE.NOTE_PLACEHOLDER' | translate"
+      />
+    </div>
+  </div>
+
+  <div class="data-card" *ngIf="!loading && rows.length">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'ADMIN.LAB_CHANGE.COL_STAFF' | translate }}</th>
+          <th>{{ 'ADMIN.LAB_CHANGE.COL_FROM' | translate }}</th>
+          <th>{{ 'ADMIN.LAB_CHANGE.COL_TO' | translate }}</th>
+          <th>{{ 'ADMIN.LAB_CHANGE.COL_SECTION' | translate }}</th>
+          <th>{{ 'ADMIN.LAB_CHANGE.COL_STATUS' | translate }}</th>
+          <th>{{ 'ADMIN.LAB_CHANGE.COL_NOTE' | translate }}</th>
+          <th>{{ 'ADMIN.LAB_CHANGE.COL_ACTIONS' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of rows">
+          <td>{{ r.requestedByName }}</td>
+          <td>{{ r.fromLabName }}</td>
+          <td>{{ r.toLabName }}</td>
+          <td>
+            {{ formatDateTime(r.sectionStart) }}
+            –
+            {{ formatDateTime(r.sectionEnd) }}
+          </td>
+          <td>
+            <span class="badge" [ngClass]="statusClass(r.status)">
+              {{ statusKey(r.status) | translate }}
+            </span>
+          </td>
+          <td>{{ r.reviewNote || '—' }}</td>
+          <td>
+            <div class="actions" *ngIf="isPending(r)">
+              <button
+                type="button"
+                class="btn-primary btn-sm"
+                [disabled]="reviewingId === r.id"
+                (click)="review(r.id, true)"
+              >
+                {{ 'ADMIN.LAB_CHANGE.APPROVE' | translate }}
+              </button>
+              <button
+                type="button"
+                class="btn-secondary btn-sm"
+                [disabled]="reviewingId === r.id"
+                (click)="review(r.id, false)"
+              >
+                {{ 'ADMIN.LAB_CHANGE.REJECT' | translate }}
+              </button>
+            </div>
+            <span *ngIf="!isPending(r)">—</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -2,6 +2,7 @@
 // Responsibility: Configures the HTTP host, middleware pipeline, and layer dependency injection.
 using System.Text.Json.Serialization;
 using Greenlab.Application;
+using Greenlab.Application.Common;
 using Greenlab.Application.Common.Interfaces;
 using Greenlab.Infrastructure;
 using Greenlab.Infrastructure.Persistence;
@@ -42,6 +43,7 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+ScheduleClock.Configure(builder.Configuration["Schedule:TimeZoneId"]);
 
 builder.Services.AddCors(options =>
 {

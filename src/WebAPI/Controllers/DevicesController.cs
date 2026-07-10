@@ -1,9 +1,10 @@
-﻿// Layer: WebAPI
+// Layer: WebAPI
 // Responsibility: Exposes device endpoints and delegates command handling to MediatR.
 using Greenlab.Application.Common;
 using Greenlab.Application.DTOs;
 using Greenlab.Application.Features.Devices.Commands;
 using Greenlab.Application.Features.Devices.Queries;
+using Greenlab.Domain.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,12 +22,13 @@ public class DevicesController : ControllerBase
 {
     private readonly ISender _sender;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILabRepository _labs;
 
-    public DevicesController(ISender sender , IHttpClientFactory httpClientFactory )
+    public DevicesController(ISender sender , IHttpClientFactory httpClientFactory, ILabRepository labs)
     {
         _sender = sender;
         _httpClientFactory = httpClientFactory;
-
+        _labs = labs;
     }
 
     [HttpPost("{labId:int}/event")]
@@ -38,9 +40,11 @@ public class DevicesController : ControllerBase
         if (!TryGetAuthenticatedDevice(out var authenticatedLabId, out var authenticatedDeviceId))
             return Unauthorized();
 
-        //var ip = "192.168.1.3:8080";
+        var lab = await _labs.GetWithDeviceStateAsync(labId, cancellationToken).ConfigureAwait(false);
+        if (lab == null)
+            return NotFound("Lab not found");
 
-        var url = $"http://localhost:8000/current-count";
+        var url = !string.IsNullOrWhiteSpace(lab.CameraRtspUrl) ? lab.CameraRtspUrl : "http://localhost:8000/current-count";
 
         var client=_httpClientFactory.CreateClient();
         var responsee = await client.GetAsync(url);

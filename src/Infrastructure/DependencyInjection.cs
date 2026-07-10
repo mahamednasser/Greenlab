@@ -61,6 +61,8 @@ public static class DependencyInjection
         services.AddScoped<IScheduleImageAnalysisService>(serviceProvider =>
             ActivatorUtilities.CreateInstance<OpenAiScheduleImageAnalysisService>(serviceProvider, new HttpClient { Timeout = TimeSpan.FromMinutes(3) }));
 
+        services.AddHostedService<OccupancyPollingService>();
+
         AddJwtAuthentication(services, configuration);
         return services;
     }

@@ -29,19 +29,38 @@ public class GetLabsOverviewQueryHandler : IRequestHandler<GetLabsOverviewQuery,
 
     public async Task<IReadOnlyList<LabOverviewDto>> Handle(GetLabsOverviewQuery request, CancellationToken cancellationToken)
     {
-        var now = DateTime.UtcNow;
-        var timeOfDay = now.TimeOfDay;
-        var day = now.DayOfWeek;
+        var utcNow = DateTime.UtcNow;
+        var localNow = ScheduleClock.ToLocal(utcNow);
+        var timeOfDay = localNow.TimeOfDay;
+        var day = localNow.DayOfWeek;
         var labs = await _labs.ListWithOverviewDataAsync(cancellationToken).ConfigureAwait(false);
 
-        return labs.Select(l => new LabOverviewDto
+        return labs.Select(l =>
         {
-            Id = l.Id,
-            Name = l.Name,
-            LastOccupancyCount = l.LastOccupancyCount,
-            LastOccupancyAt = l.LastOccupancyAt,
-            InSession = l.SectionSchedules.Any(s => s.DayOfWeek == day && s.StartTime <= timeOfDay && s.EndTime >= timeOfDay),
-            Override = LabMapping.ToOverrideDto(l.ControlOverride)
+            var energy = LabDeviceStateCache.GetEnergy(l.Id, utcNow);
+            var lightOn = l.ControlOverride?.ForceLightOn ?? energy.LightOn;
+            var fanOn = l.ControlOverride?.ForceFanOn ?? energy.FanOn;
+            if (lightOn != energy.LightOn || fanOn != energy.FanOn)
+            {
+                LabDeviceStateCache.SetState(l.Id, lightOn, fanOn);
+                energy = LabDeviceStateCache.GetEnergy(l.Id, utcNow);
+            }
+
+            return new LabOverviewDto
+            {
+                Id = l.Id,
+                Name = l.Name,
+                LastOccupancyCount = l.LastOccupancyCount,
+                LastOccupancyAt = l.LastOccupancyAt,
+                InSession = l.SectionSchedules.Any(s => s.DayOfWeek == day && s.StartTime <= timeOfDay && s.EndTime >= timeOfDay),
+                Override = LabMapping.ToOverrideDto(l.ControlOverride),
+                ActualLightOn = lightOn,
+                ActualFanOn = fanOn,
+                LightRuntimeSeconds = energy.LightRuntimeSeconds,
+                FanRuntimeSeconds = energy.FanRuntimeSeconds,
+                CurrentWatts = energy.CurrentWatts,
+                EnergyKwh = energy.EnergyKwh
+            };
         }).ToList();
     }
 }

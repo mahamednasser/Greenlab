@@ -14,6 +14,9 @@ import {
   UpdateUserRequest,
   StaffAssignmentRow,
   CreateStaffAssignmentRequest,
+  AuditLogDto,
+  LabChangeRequestDto,
+  ReviewLabChangeRequestDto,
 } from '../models/api.types';
 
 @Injectable({ providedIn: 'root' })
@@ -84,5 +87,34 @@ export class AdminService {
 
   createStaffAssignment(body: CreateStaffAssignmentRequest): Observable<StaffAssignmentRow> {
     return this.http.post<StaffAssignmentRow>(`${this.api}/staff-assignments`, body);
+  }
+
+  updateStaffAssignment(id: number, body: CreateStaffAssignmentRequest): Observable<StaffAssignmentRow> {
+    return this.http.put<StaffAssignmentRow>(`${this.api}/staff-assignments/${id}`, body);
+  }
+
+  deleteStaffAssignment(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.api}/staff-assignments/${id}`);
+  }
+
+  getAuditLogs(): Observable<AuditLogDto[]> {
+    return this.http.get<AuditLogDto[]>(`${this.api}/audit-logs`);
+  }
+
+  getLabChangeRequests(status?: string): Observable<LabChangeRequestDto[]> {
+    const params = status ? `?status=${encodeURIComponent(status)}` : '';
+    return this.http.get<LabChangeRequestDto[]>(`${this.api}/lab-change-requests${params}`);
+  }
+
+  reviewLabChangeRequest(id: number, body: ReviewLabChangeRequestDto): Observable<void> {
+    return this.http.post<void>(`${this.api}/lab-change-requests/${id}/review`, body);
+  }
+
+  updateLab(id: number, body: CreateLabRequest): Observable<LabDetailDto> {
+    return this.http.put<LabDetailDto>(`${this.api}/labs/${id}`, body);
+  }
+
+  deleteLab(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.api}/labs/${id}`);
   }
 }

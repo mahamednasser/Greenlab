@@ -8,6 +8,7 @@ import { LabService } from '../../services/lab.service';
 import { AuthService } from '../../core/auth.service';
 import { Device } from '../../models/lab.model';
 import { LabDetailDto, LabOverviewApiRow } from '../../models/api.types';
+import { LAB_MAX_WATTS, LIGHT_WATTS, FAN_WATTS, energyFromRuntime, labWatts } from '../../utils/power';
 
 @Component({
   selector: 'app-lab-detail',
@@ -21,21 +22,35 @@ export class LabDetailComponent implements OnInit, OnDestroy {
   labName = 'Lab';
   floorLabel = '—';
   statusLabel: 'Active' | 'Idle' | 'Off' = 'Active';
+  /** Accumulated energy (kWh) shown on the gauge. */
   energyUsed = 0;
-  energyMax = 30;
+  energyMax = LAB_MAX_WATTS;
+  currentWatts = 0;
   gaugePct = 0;
   showStaffNote = false;
   occupancySummary = '';
   lastSeenSummary = '';
   loading = true;
   errorMsg: string | null = null;
+  controlError: string | null = null;
 
+  lightOn = false;
+  fanOn = false;
+  lightBusy = false;
+  fanBusy = false;
+
+  readonly lightWatts = LIGHT_WATTS;
+  readonly fanWatts = FAN_WATTS;
   readonly gaugeTotal = 2 * Math.PI * 50;
   gaugeArc = 0;
   gaugeOffset = 0;
 
-  private labId = NaN;
+  labId = NaN;
   private langSub?: Subscription;
+
+  get isAdmin(): boolean {
+    return this.auth.isAdmin();
+  }
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -58,6 +73,7 @@ export class LabDetailComponent implements OnInit, OnDestroy {
   private load(): void {
     this.loading = true;
     this.errorMsg = null;
+    this.controlError = null;
     this.showStaffNote = false;
     this.devices = [];
 
@@ -101,9 +117,18 @@ export class LabDetailComponent implements OnInit, OnDestroy {
           }
           this.labName = row.name;
           this.floorLabel = '—';
-          this.statusLabel = row.inSession ? 'Active' : 'Idle';
-          this.energyUsed = row.inSession ? 12 : 4;
-          this.energyMax = 30;
+          this.lightOn = !!row.actualLightOn;
+          this.fanOn = !!row.actualFanOn;
+          this.statusLabel = row.inSession
+            ? 'Active'
+            : this.lightOn || this.fanOn
+              ? 'Idle'
+              : 'Off';
+          const lightSec = Number(row.lightRuntimeSeconds ?? 0);
+          const fanSec = Number(row.fanRuntimeSeconds ?? 0);
+          this.energyUsed = Number(row.energyKwh ?? 0) || energyFromRuntime(lightSec, fanSec);
+          this.currentWatts = Number(row.currentWatts ?? 0) || labWatts(this.lightOn, this.fanOn);
+          this.energyMax = LAB_MAX_WATTS;
           this.occupancySummary = row.inSession
             ? this.translate.instant('LAB_DETAIL.OCC_SESSION')
             : this.translate.instant('LAB_DETAIL.OCC_NONE');
@@ -130,23 +155,83 @@ export class LabDetailComponent implements OnInit, OnDestroy {
     this.showStaffNote = false;
 
     if (overview) {
-      this.statusLabel = overview.inSession ? 'Active' : 'Idle';
-      this.energyUsed = Math.min(
-        29,
-        Math.round(overview.lastOccupancyCount * 2.2 + (overview.inSession ? 7 : 2))
-      );
-      this.energyMax = 30;
+      this.lightOn = !!overview.actualLightOn;
+      this.fanOn = !!overview.actualFanOn;
+      this.statusLabel = overview.inSession
+        ? 'Active'
+        : this.lightOn || this.fanOn
+          ? 'Idle'
+          : 'Off';
+      const lightSec = Number(overview.lightRuntimeSeconds ?? 0);
+      const fanSec = Number(overview.fanRuntimeSeconds ?? 0);
+      this.energyUsed = Number(overview.energyKwh ?? 0) || energyFromRuntime(lightSec, fanSec);
+      this.currentWatts =
+        Number(overview.currentWatts ?? 0) || labWatts(this.lightOn, this.fanOn);
+      this.energyMax = LAB_MAX_WATTS;
       this.occupancySummary = this.translate.instant('LAB_DETAIL.LAST_COUNT', {
         count: overview.lastOccupancyCount,
       });
       this.lastSeenSummary = this.formatRelative(overview.lastOccupancyAt);
     } else {
-      this.statusLabel = 'Active';
-      this.energyUsed = 18;
-      this.energyMax = 30;
+      this.statusLabel = 'Off';
+      this.lightOn = false;
+      this.fanOn = false;
+      this.energyUsed = 0;
+      this.currentWatts = 0;
+      this.energyMax = LAB_MAX_WATTS;
       this.occupancySummary = this.translate.instant('LAB_DETAIL.NO_OVERVIEW');
       this.lastSeenSummary = '—';
     }
+  }
+
+  toggleLight(): void {
+    if (this.lightBusy || Number.isNaN(this.labId)) return;
+    const next = !this.lightOn;
+    const prev = this.lightOn;
+    this.lightOn = next;
+    this.lightBusy = true;
+    this.controlError = null;
+    this.syncPowerFromLoads();
+    this.svc.setLightState(this.labId, next).subscribe({
+      next: () => {
+        this.lightBusy = false;
+      },
+      error: () => {
+        this.lightOn = prev;
+        this.lightBusy = false;
+        this.syncPowerFromLoads();
+        this.controlError = 'LABS.CONTROL_LIGHT_ERROR';
+      },
+    });
+  }
+
+  toggleFan(): void {
+    if (this.fanBusy || Number.isNaN(this.labId)) return;
+    const next = !this.fanOn;
+    const prev = this.fanOn;
+    this.fanOn = next;
+    this.fanBusy = true;
+    this.controlError = null;
+    this.syncPowerFromLoads();
+    this.svc.setFanState(this.labId, next).subscribe({
+      next: () => {
+        this.fanBusy = false;
+      },
+      error: () => {
+        this.fanOn = prev;
+        this.fanBusy = false;
+        this.syncPowerFromLoads();
+        this.controlError = 'LABS.CONTROL_FAN_ERROR';
+      },
+    });
+  }
+
+  private syncPowerFromLoads(): void {
+    this.currentWatts = labWatts(this.lightOn, this.fanOn);
+    if (this.statusLabel !== 'Active') {
+      this.statusLabel = this.lightOn || this.fanOn ? 'Idle' : 'Off';
+    }
+    this.updateGauge();
   }
 
   private formatRelative(iso: string | null): string {
@@ -175,9 +260,9 @@ export class LabDetailComponent implements OnInit, OnDestroy {
   }
 
   private updateGauge(): void {
-    const pct = this.energyMax > 0 ? this.energyUsed / this.energyMax : 0;
-    this.gaugePct = Math.round(pct * 100);
-    const arcLen = this.gaugeTotal * pct;
+    const pct = this.energyMax > 0 ? this.currentWatts / this.energyMax : 0;
+    this.gaugePct = Math.round(Math.min(1, pct) * 100);
+    const arcLen = this.gaugeTotal * Math.min(1, pct);
     this.gaugeArc = +arcLen.toFixed(2);
     this.gaugeOffset = +(this.gaugeTotal * 0.25).toFixed(2);
   }

@@ -8,6 +8,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http;
+using Greenlab.Application.Common;
 
 namespace Greenlab.WebAPI.Controllers;
 
@@ -134,6 +135,7 @@ public class AdminLabsController : ControllerBase
 
             if ( response.IsSuccessStatusCode )
             {
+                LabDeviceStateCache.SetLightState(LabId, true);
                 return Ok(new
                 {
                     success = true ,
@@ -180,6 +182,7 @@ public class AdminLabsController : ControllerBase
 
             if ( response.IsSuccessStatusCode )
             {
+                LabDeviceStateCache.SetLightState(LabId, false);
                 return Ok(new
                 {
                     success = true ,
@@ -224,6 +227,7 @@ public class AdminLabsController : ControllerBase
 
             if ( response.IsSuccessStatusCode )
             {
+                LabDeviceStateCache.SetFanState(LabId, true);
                 return Ok(new
                 {
                     success = true ,
@@ -270,6 +274,7 @@ public class AdminLabsController : ControllerBase
 
             if ( response.IsSuccessStatusCode )
             {
+                LabDeviceStateCache.SetFanState(LabId, false);
                 return Ok(new
                 {
                     success = true ,

@@ -1,0 +1,141 @@
+.filters-card {
+  display: flex;
+  gap: 16px;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px 20px;
+  box-shadow: var(--sh-sm);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 180px;
+
+  label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-lt);
+    letter-spacing: 0.5px;
+  }
+
+  .filter-input {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    font-size: 13.5px;
+    color: var(--text-dark);
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+
+    &:focus {
+      border-color: var(--green-primary);
+    }
+  }
+}
+
+.log-row {
+  cursor: pointer;
+  transition: background-color 0.15s;
+
+  &:hover {
+    background: var(--green-lighter) !important;
+  }
+
+  &.expanded {
+    background: var(--green-lighter);
+  }
+}
+
+.date-cell {
+  font-weight: 500;
+  color: var(--text-med);
+}
+
+.sub-text {
+  font-size: 11px;
+  color: var(--text-lt);
+  margin-top: 1px;
+}
+
+.text-muted {
+  color: var(--text-lt);
+  font-style: italic;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+
+  &.badge-info {
+    background: #e0f2fe;
+    color: #0369a1;
+  }
+
+  &.badge-warning {
+    background: #fef3c7;
+    color: #b45309;
+  }
+
+  &.badge-success {
+    background: var(--green-badge-bg);
+    color: var(--green-badge-txt);
+  }
+
+  &.badge-secondary {
+    background: var(--gray-badge-bg);
+    color: var(--gray-badge-txt);
+  }
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--green-primary);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover {
+    color: var(--green-dark);
+  }
+}
+
+.details-row {
+  background: #f9fafb;
+}
+
+.details-container {
+  padding: 16px 24px;
+  border-top: 1px dashed var(--border-lt);
+  border-bottom: 1px dashed var(--border-lt);
+  overflow-x: auto;
+}
+
+.details-pre {
+  margin: 0;
+  font-family: Consolas, Monaco, Lucida Console, monospace;
+  font-size: 12px;
+  color: var(--text-dark);
+  background: #f3f4f6;
+  border: 1px solid var(--border-lt);
+  border-radius: var(--r-md);
+  padding: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 250px;
+  overflow-y: auto;
+}

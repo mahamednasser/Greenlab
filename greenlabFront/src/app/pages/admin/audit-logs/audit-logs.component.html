@@ -1,0 +1,96 @@
+<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>{{ 'ADMIN.AUDIT_LOGS.TITLE' | translate }}</h1>
+      <p class="sub">{{ 'ADMIN.AUDIT_LOGS.SUB' | translate }}</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="fetch()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="margin-inline-end: 6px; vertical-align: middle;">
+        <path d="M13.65 2.35A7.96 7.96 0 008 0a8 8 0 108 8h-2A6 6 0 118 2c1.66 0 3.14.69 4.22 1.78L10 6h6V0l-2.35 2.35z"/>
+      </svg>
+      Refresh
+    </button>
+  </div>
+
+  <!-- Filters Row -->
+  <div class="filters-card">
+    <div class="filter-group">
+      <label>Search</label>
+      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()" placeholder="Search logs..." class="filter-input" />
+    </div>
+
+    <div class="filter-group">
+      <label>Action</label>
+      <select [(ngModel)]="selectedAction" (ngModelChange)="applyFilters()" class="filter-input">
+        <option value="">All Actions</option>
+        <option *ngFor="let act of uniqueActions" [value]="act">{{ act }}</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Lab</label>
+      <select [(ngModel)]="selectedLabId" (ngModelChange)="applyFilters()" class="filter-input">
+        <option [ngValue]="null">All Labs</option>
+        <option *ngFor="let lab of uniqueLabs" [value]="lab.id">{{ lab.name }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- State Messages -->
+  <p *ngIf="loading" class="state-msg">{{ 'ADMIN.AUDIT_LOGS.LOADING' | translate }}</p>
+  <p *ngIf="errorMsg" class="state-msg err">{{ errorMsg | translate }}</p>
+  <p *ngIf="!loading && !errorMsg && filteredLogs.length === 0" class="state-msg">
+    {{ 'ADMIN.AUDIT_LOGS.EMPTY' | translate }}
+  </p>
+
+  <!-- Audit Table -->
+  <div class="data-card" *ngIf="!loading && filteredLogs.length > 0">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'ADMIN.AUDIT_LOGS.COL_DATE' | translate }}</th>
+          <th>{{ 'ADMIN.AUDIT_LOGS.COL_USER' | translate }}</th>
+          <th>{{ 'ADMIN.AUDIT_LOGS.COL_ACTION' | translate }}</th>
+          <th>{{ 'ADMIN.AUDIT_LOGS.COL_LAB' | translate }}</th>
+          <th>{{ 'ADMIN.AUDIT_LOGS.COL_DETAILS' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let log of filteredLogs">
+          <tr (click)="toggleExpand(log.id)" class="log-row" [class.expanded]="expandedLogId === log.id">
+            <td class="date-cell">
+              {{ log.createdAt | date: 'medium' }}
+            </td>
+            <td>
+              <div *ngIf="log.userFullName; else noUser">
+                <strong>{{ log.userFullName }}</strong>
+                <div class="sub-text">{{ log.userEmail }}</div>
+              </div>
+              <ng-template #noUser><span class="text-muted">—</span></ng-template>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="getActionBadgeClass(log.action)">{{ log.action }}</span>
+            </td>
+            <td>
+              <span *ngIf="log.labName">{{ log.labName }}</span>
+              <span *ngIf="!log.labName" class="text-muted">—</span>
+            </td>
+            <td>
+              <button type="button" class="btn-link">
+                {{ expandedLogId === log.id ? 'Hide Details' : 'View Details' }}
+              </button>
+            </td>
+          </tr>
+          <!-- Expanded Details Row -->
+          <tr *ngIf="expandedLogId === log.id" class="details-row">
+            <td colspan="5">
+              <div class="details-container">
+                <pre class="details-pre">{{ formatDetails(log.details) }}</pre>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+</div>

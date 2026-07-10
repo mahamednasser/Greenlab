@@ -1,0 +1,83 @@
+<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>{{ 'STAFF.LAB_CHANGE.TITLE' | translate }}</h1>
+      <p class="sub">{{ 'STAFF.LAB_CHANGE.SUB' | translate }}</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="toggleForm()">
+      {{ (showForm ? 'STAFF.LAB_CHANGE.CANCEL' : 'STAFF.LAB_CHANGE.ADD') | translate }}
+    </button>
+  </div>
+
+  <p *ngIf="loading" class="state-msg">{{ 'STAFF.LAB_CHANGE.LOADING' | translate }}</p>
+  <p *ngIf="errorMsg" class="state-msg err">{{ errorMsg | translate }}</p>
+  <p *ngIf="successMsg" class="state-msg ok">{{ successMsg | translate }}</p>
+  <p *ngIf="!loading && !errorMsg && rows.length === 0" class="state-msg">
+    {{ 'STAFF.LAB_CHANGE.EMPTY' | translate }}
+  </p>
+
+  <form class="form-card" *ngIf="showForm" (ngSubmit)="submit()">
+    <div class="form-row">
+      <label>{{ 'STAFF.LAB_CHANGE.FIELD_FROM' | translate }}</label>
+      <select [(ngModel)]="fromLabId" name="fromLabId" required>
+        <option *ngFor="let l of myLabs" [ngValue]="l.id">{{ l.name }}</option>
+      </select>
+      <p class="hint" *ngIf="!myLabs.length">{{ 'STAFF.LAB_CHANGE.NO_CURRENT' | translate }}</p>
+    </div>
+    <div class="form-row">
+      <label>{{ 'STAFF.LAB_CHANGE.FIELD_TO' | translate }}</label>
+      <select [(ngModel)]="toLabId" name="toLabId" required>
+        <option *ngFor="let l of allLabs" [ngValue]="l.id">{{ l.name }}</option>
+      </select>
+    </div>
+    <div class="form-row time-row">
+      <div>
+        <label>{{ 'STAFF.LAB_CHANGE.FIELD_START' | translate }}</label>
+        <input type="datetime-local" [(ngModel)]="sectionStart" name="sectionStart" required />
+      </div>
+      <div>
+        <label>{{ 'STAFF.LAB_CHANGE.FIELD_END' | translate }}</label>
+        <input type="datetime-local" [(ngModel)]="sectionEnd" name="sectionEnd" required />
+      </div>
+    </div>
+    <p class="hint">{{ 'STAFF.LAB_CHANGE.HINT' | translate }}</p>
+    <div class="form-actions">
+      <button type="submit" class="btn-primary" [disabled]="saving || !myLabs.length">
+        {{ 'STAFF.LAB_CHANGE.SAVE' | translate }}
+      </button>
+    </div>
+  </form>
+
+  <div class="data-card" *ngIf="!loading && rows.length">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'STAFF.LAB_CHANGE.COL_FROM' | translate }}</th>
+          <th>{{ 'STAFF.LAB_CHANGE.COL_TO' | translate }}</th>
+          <th>{{ 'STAFF.LAB_CHANGE.COL_SECTION' | translate }}</th>
+          <th>{{ 'STAFF.LAB_CHANGE.COL_STATUS' | translate }}</th>
+          <th>{{ 'STAFF.LAB_CHANGE.COL_NOTE' | translate }}</th>
+          <th>{{ 'STAFF.LAB_CHANGE.COL_CREATED' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of rows">
+          <td>{{ r.fromLabName }}</td>
+          <td>{{ r.toLabName }}</td>
+          <td>
+            {{ formatDateTime(r.sectionStart) }}
+            –
+            {{ formatDateTime(r.sectionEnd) }}
+          </td>
+          <td>
+            <span class="badge" [ngClass]="statusClass(r.status)">
+              {{ statusKey(r.status) | translate }}
+            </span>
+          </td>
+          <td>{{ r.reviewNote || '—' }}</td>
+          <td>{{ formatDateTime(r.createdAt) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

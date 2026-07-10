@@ -407,6 +407,31 @@ public class AdminController : ControllerBase
             AddManualCommand(labId, userId, ManualControlTarget.Relay4, req.ForceRelay4On.Value.ToString());
     }
 
+    [HttpGet("audit-logs")]
+    public async Task<ActionResult<IReadOnlyList<AuditLogDto>>> GetAuditLogs(CancellationToken cancellationToken)
+    {
+        var logs = await _db.AuditLogs
+            .AsNoTracking()
+            .Include(l => l.Lab)
+            .Include(l => l.User)
+            .OrderByDescending(l => l.CreatedAt)
+            .Take(200)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        return logs.Select(l => new AuditLogDto
+        {
+            Id = l.Id,
+            Action = l.Action,
+            Details = l.Details,
+            LabId = l.LabId,
+            LabName = l.Lab?.Name,
+            UserId = l.UserId,
+            UserFullName = l.User?.FullName,
+            UserEmail = l.User?.Email,
+            CreatedAt = l.CreatedAt
+        }).ToList();
+    }
+
     private void AddManualCommand(int labId, int userId, ManualControlTarget target, string value)
     {
         _db.ManualControlCommands.Add(new ManualControlCommand
