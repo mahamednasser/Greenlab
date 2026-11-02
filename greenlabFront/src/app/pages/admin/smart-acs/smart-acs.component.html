@@ -1,0 +1,116 @@
+<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h1>{{ 'ADMIN.SMART_ACS.TITLE' | translate }}</h1>
+      <p class="sub">{{ 'ADMIN.SMART_ACS.SUB' | translate }}</p>
+    </div>
+    <button type="button" class="btn-primary" (click)="openCreate()" *ngIf="!showForm">
+      {{ 'ADMIN.SMART_ACS.ADD' | translate }}
+    </button>
+  </div>
+
+  <p *ngIf="loading" class="state-msg">{{ 'ADMIN.SMART_ACS.LOADING' | translate }}</p>
+  <p *ngIf="errorMsg" class="state-msg err">{{ errorMsg.startsWith('ADMIN.') ? (errorMsg | translate) : errorMsg }}</p>
+  <p *ngIf="successMsg" class="state-msg ok">{{ successMsg | translate }}</p>
+
+  <form class="form-card" *ngIf="showForm" (ngSubmit)="submit()">
+    <h2 class="form-title">
+      {{ (isEditing ? 'ADMIN.SMART_ACS.EDIT_TITLE' : 'ADMIN.SMART_ACS.ADD_TITLE') | translate }}
+    </h2>
+
+    <div class="form-row">
+      <label>{{ 'ADMIN.SMART_ACS.FIELD_LAB' | translate }}</label>
+      <select [(ngModel)]="labId" name="labId" required>
+        <option *ngFor="let lab of labs" [ngValue]="lab.id">{{ lab.name }}</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>{{ 'ADMIN.SMART_ACS.FIELD_NAME' | translate }}</label>
+      <input [(ngModel)]="name" name="name" required placeholder="Lab A AC" />
+    </div>
+
+    <div class="form-row">
+      <label>{{ 'ADMIN.SMART_ACS.FIELD_IP' | translate }}</label>
+      <input [(ngModel)]="ipAddress" name="ipAddress" required placeholder="192.168.1.55" />
+    </div>
+
+    <div class="form-row">
+      <label>{{ 'ADMIN.SMART_ACS.FIELD_PORT' | translate }}</label>
+      <input type="number" [(ngModel)]="port" name="port" min="1" max="65535" />
+    </div>
+
+    <div class="form-row">
+      <label>{{ 'ADMIN.SMART_ACS.FIELD_PREFIX' | translate }}</label>
+      <input [(ngModel)]="pathPrefix" name="pathPrefix" placeholder="/ac (optional)" />
+    </div>
+
+    <div class="form-row" *ngIf="isEditing">
+      <label>
+        <input type="checkbox" [(ngModel)]="isActive" name="isActive" />
+        {{ 'ADMIN.SMART_ACS.FIELD_ACTIVE' | translate }}
+      </label>
+    </div>
+
+    <p class="hint">{{ 'ADMIN.SMART_ACS.HINT' | translate }}</p>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary" [disabled]="saving">
+        {{ (saving ? 'ADMIN.SMART_ACS.SAVING' : 'ADMIN.SMART_ACS.SAVE') | translate }}
+      </button>
+      <button type="button" class="btn-secondary" (click)="cancelForm()" [disabled]="saving">
+        {{ 'ADMIN.SMART_ACS.CANCEL' | translate }}
+      </button>
+    </div>
+  </form>
+
+  <p *ngIf="!loading && !showForm && rows.length === 0" class="state-msg">
+    {{ 'ADMIN.SMART_ACS.EMPTY' | translate }}
+  </p>
+
+  <div class="data-card" *ngIf="!loading && rows.length">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'ADMIN.SMART_ACS.COL_NAME' | translate }}</th>
+          <th>{{ 'ADMIN.SMART_ACS.COL_LAB' | translate }}</th>
+          <th>{{ 'ADMIN.SMART_ACS.COL_IP' | translate }}</th>
+          <th>{{ 'ADMIN.SMART_ACS.COL_STATE' | translate }}</th>
+          <th>{{ 'ADMIN.SMART_ACS.COL_ACTIONS' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of rows">
+          <td>
+            <strong>{{ row.name }}</strong>
+            <span class="badge" [class.ok]="row.isActive" [class.off]="!row.isActive">
+              {{ (row.isActive ? 'ADMIN.STATUS_ACTIVE' : 'ADMIN.STATUS_INACTIVE') | translate }}
+            </span>
+          </td>
+          <td>{{ row.labName }}</td>
+          <td>
+            <code>{{ row.ipAddress }}:{{ row.port }}</code>
+            <span class="muted" *ngIf="row.pathPrefix">{{ row.pathPrefix }}</span>
+          </td>
+          <td>
+            <span class="badge" [class.ok]="row.lastPowerOn === true" [class.off]="row.lastPowerOn !== true">
+              {{ (row.lastPowerOn === true ? 'LABS.TAG_ON' : 'LABS.TAG_OFF') | translate }}
+            </span>
+            <span class="muted" *ngIf="row.lastTargetTempC != null">{{ row.lastTargetTempC }}°C</span>
+          </td>
+          <td class="actions">
+            <button type="button" class="btn-secondary sm" [disabled]="busyPower[row.id]" (click)="togglePower(row)">
+              {{ (row.lastPowerOn === true ? 'ADMIN.SMART_ACS.POWER_OFF' : 'ADMIN.SMART_ACS.POWER_ON') | translate }}
+            </button>
+            <button type="button" class="btn-secondary sm" (click)="openEdit(row)">
+              {{ 'ADMIN.SMART_ACS.EDIT' | translate }}
+            </button>
+            <button type="button" class="btn-secondary sm danger" (click)="remove(row)">
+              {{ 'ADMIN.SMART_ACS.DELETE' | translate }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

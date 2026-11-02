@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ILabRepository, LabRepository>();
         services.AddScoped<ILabDeviceRepository, LabDeviceRepository>();
+        services.AddScoped<ISmartAcRepository, SmartAcRepository>();
         services.AddScoped<ILabSensorRepository, LabSensorRepository>();
         services.AddScoped<ILabControlOverrideRepository, LabControlOverrideRepository>();
         services.AddScoped<ILabSectionScheduleRepository, LabSectionScheduleRepository>();
@@ -60,6 +61,8 @@ public static class DependencyInjection
             ActivatorUtilities.CreateInstance<CrowdCountClient>(serviceProvider, new HttpClient { Timeout = TimeSpan.FromSeconds(20) }));
         services.AddScoped<IScheduleImageAnalysisService>(serviceProvider =>
             ActivatorUtilities.CreateInstance<OpenAiScheduleImageAnalysisService>(serviceProvider, new HttpClient { Timeout = TimeSpan.FromMinutes(3) }));
+        services.AddHttpClient("SmartAc");
+        services.AddScoped<ISmartAcGatewayClient, SmartAcGatewayClient>();
 
         services.AddHostedService<OccupancyPollingService>();
 

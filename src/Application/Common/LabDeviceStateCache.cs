@@ -44,6 +44,34 @@ public static class LabDeviceStateCache
         return (state.LightOn, state.FanOn);
     }
 
+    /// <summary>
+    /// Seeds demo ON/OFF + accumulated runtime for dashboards (only if lab has no state yet).
+    /// </summary>
+    public static bool TrySeedDemo(
+        int labId,
+        bool lightOn,
+        bool fanOn,
+        double lightOnSeconds,
+        double fanOnSeconds)
+    {
+        if (States.ContainsKey(labId))
+            return false;
+
+        var now = DateTime.UtcNow;
+        return States.TryAdd(
+            labId,
+            new LabPowerState(
+                lightOn,
+                fanOn,
+                lightOn ? now : null,
+                fanOn ? now : null,
+                Math.Max(0, lightOnSeconds),
+                Math.Max(0, fanOnSeconds)));
+    }
+
+    /// <summary>True when the lab has never been written to the cache.</summary>
+    public static bool HasState(int labId) => States.ContainsKey(labId);
+
     /// <summary>Runtime totals including any currently-ON interval up to <paramref name="utcNow"/>.</summary>
     public static LabEnergySnapshot GetEnergy(int labId, DateTime? utcNow = null)
     {

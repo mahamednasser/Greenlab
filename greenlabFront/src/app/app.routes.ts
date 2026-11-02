@@ -25,6 +25,7 @@ export const routes: Routes = [
       { path: 'staff/lab-change', loadComponent: () => import('./pages/staff/lab-change/lab-change.component').then(m => m.LabChangeComponent) },
       { path: 'admin/users',    loadComponent: () => import('./pages/admin/users/users.component').then(m => m.UsersComponent), canActivate: [adminGuard] },
       { path: 'admin/devices',  loadComponent: () => import('./pages/admin/devices/devices.component').then(m => m.DevicesComponent), canActivate: [adminGuard] },
+      { path: 'admin/smart-acs', loadComponent: () => import('./pages/admin/smart-acs/smart-acs.component').then(m => m.SmartAcsComponent), canActivate: [adminGuard] },
       { path: 'admin/courses',  loadComponent: () => import('./pages/admin/courses/courses.component').then(m => m.CoursesComponent), canActivate: [adminGuard] },
       { path: 'admin/staff',    loadComponent: () => import('./pages/admin/staff/staff.component').then(m => m.StaffComponent), canActivate: [adminGuard] },
       { path: 'admin/lab-change-requests', loadComponent: () => import('./pages/admin/lab-change-requests/lab-change-requests.component').then(m => m.LabChangeRequestsComponent), canActivate: [adminGuard] },

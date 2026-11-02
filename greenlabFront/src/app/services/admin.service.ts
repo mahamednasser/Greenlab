@@ -17,6 +17,9 @@ import {
   AuditLogDto,
   LabChangeRequestDto,
   ReviewLabChangeRequestDto,
+  SmartAcDto,
+  CreateSmartAcRequest,
+  UpdateSmartAcRequest,
 } from '../models/api.types';
 
 @Injectable({ providedIn: 'root' })
@@ -116,5 +119,30 @@ export class AdminService {
 
   deleteLab(id: number): Observable<void> {
     return this.http.delete<void>(`${this.api}/labs/${id}`);
+  }
+
+  listSmartAcs(): Observable<SmartAcDto[]> {
+    return this.http.get<SmartAcDto[]>(`${this.api}/smart-acs`);
+  }
+
+  createSmartAc(body: CreateSmartAcRequest): Observable<SmartAcDto> {
+    return this.http.post<SmartAcDto>(`${this.api}/smart-acs`, body);
+  }
+
+  updateSmartAc(id: number, body: UpdateSmartAcRequest): Observable<SmartAcDto> {
+    return this.http.put<SmartAcDto>(`${this.api}/smart-acs/${id}`, body);
+  }
+
+  deleteSmartAc(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.api}/smart-acs/${id}`);
+  }
+
+  setSmartAcPower(acId: number, on: boolean): Observable<SmartAcDto> {
+    const action = on ? 'on' : 'off';
+    return this.http.post<SmartAcDto>(`${this.api}/smart-acs/${acId}/power/${action}`, {});
+  }
+
+  setSmartAcTemp(acId: number, celsius: number): Observable<SmartAcDto> {
+    return this.http.post<SmartAcDto>(`${this.api}/smart-acs/${acId}/temp`, { celsius });
   }
 }

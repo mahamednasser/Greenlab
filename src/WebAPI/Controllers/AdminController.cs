@@ -211,6 +211,7 @@ public class AdminController : ControllerBase
         if (error != null || built == null)
             return BadRequest(error);
 
+
         var row = new StaffLabAssignment
         {
             UserId = built.User.Id,

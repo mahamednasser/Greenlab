@@ -84,6 +84,22 @@
             </svg>
             {{ tagKey(lab.pcs) | translate }}
           </span>
+          <button
+            type="button"
+            class="dev-tag dev-action motion-lock"
+            [class.tag-locked]="lab.motionSensorDisabled"
+            [class.tag-on]="!lab.motionSensorDisabled"
+            [disabled]="isMotionBusy(lab.id)"
+            [title]="(lab.motionSensorDisabled ? 'LABS.MOTION_LOCKED_HINT' : 'LABS.MOTION_UNLOCKED_HINT') | translate"
+            (click)="onToggleMotionLock($event, lab)">
+            <svg *ngIf="!lab.motionSensorDisabled" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+            </svg>
+            <svg *ngIf="lab.motionSensorDisabled" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/>
+            </svg>
+            {{ (lab.motionSensorDisabled ? 'LABS.MOTION_LOCKED' : 'LABS.MOTION_ON') | translate }}
+          </button>
         </div>
         <span class="time-lbl">
           <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3">

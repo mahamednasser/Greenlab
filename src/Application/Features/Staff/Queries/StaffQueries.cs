@@ -17,7 +17,9 @@ public record CurrentLabDto(
     double LightRuntimeSeconds = 0,
     double FanRuntimeSeconds = 0,
     double CurrentWatts = 0,
-    double EnergyKwh = 0);
+    double EnergyKwh = 0,
+    int LastOccupancyCount = 0,
+    DateTime? LastOccupancyAt = null);
 
 public record GetCurrentLabsQuery(int UserId) : IRequest<IReadOnlyList<CurrentLabDto>>;
 
@@ -66,7 +68,9 @@ public class GetCurrentLabsQueryHandler : IRequestHandler<GetCurrentLabsQuery, I
                 energy.LightRuntimeSeconds,
                 energy.FanRuntimeSeconds,
                 energy.CurrentWatts,
-                energy.EnergyKwh);
+                energy.EnergyKwh,
+                l.LastOccupancyCount,
+                l.LastOccupancyAt);
         }).ToList();
     }
 }

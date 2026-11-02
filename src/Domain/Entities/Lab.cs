@@ -20,6 +20,7 @@ public class Lab
 
     public LabControlOverride? ControlOverride { get; set; }
     public ICollection<LabDevice> Devices { get; set; } = new List<LabDevice>();
+    public ICollection<SmartAc> SmartAcs { get; set; } = new List<SmartAc>();
     public ICollection<LabSensor> Sensors { get; set; } = new List<LabSensor>();
     public ICollection<LabSectionSchedule> SectionSchedules { get; set; } = new List<LabSectionSchedule>();
     public ICollection<StaffLabAssignment> StaffAssignments { get; set; } = new List<StaffLabAssignment>();

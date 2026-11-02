@@ -37,6 +37,8 @@ export type CurrentLabApiRow = {
   fanRuntimeSeconds?: number;
   currentWatts?: number;
   energyKwh?: number;
+  lastOccupancyCount?: number;
+  lastOccupancyAt?: string | null;
 } & Record<string, unknown>;
 
 export function readLabOverride(row: Record<string, unknown>): LabOverrideDto | null {
@@ -199,5 +201,37 @@ export interface ReviewLabChangeRequestDto {
 export interface LabOptionDto {
   id: number;
   name: string;
+}
+
+export interface SmartAcDto {
+  id: number;
+  labId: number;
+  labName: string;
+  name: string;
+  ipAddress: string;
+  port: number;
+  pathPrefix: string | null;
+  isActive: boolean;
+  lastTargetTempC: number | null;
+  lastPowerOn: boolean | null;
+  lastSeenAt: string | null;
+  createdAt: string;
+}
+
+export interface CreateSmartAcRequest {
+  labId: number;
+  name: string;
+  ipAddress: string;
+  port: number;
+  pathPrefix?: string | null;
+}
+
+export interface UpdateSmartAcRequest {
+  labId: number;
+  name: string;
+  ipAddress: string;
+  port: number;
+  pathPrefix?: string | null;
+  isActive: boolean;
 }
 

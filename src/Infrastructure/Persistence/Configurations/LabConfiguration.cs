@@ -33,6 +33,21 @@ public class LabDeviceConfiguration : IEntityTypeConfiguration<LabDevice>
     }
 }
 
+public class SmartAcConfiguration : IEntityTypeConfiguration<SmartAc>
+{
+    public void Configure(EntityTypeBuilder<SmartAc> builder)
+    {
+        builder.ToTable("SmartAcs");
+        builder.Property(x => x.Name).HasMaxLength(200);
+        builder.Property(x => x.IpAddress).HasMaxLength(128);
+        builder.Property(x => x.PathPrefix).HasMaxLength(100);
+        builder.HasOne(x => x.Lab).WithMany(x => x.SmartAcs).HasForeignKey(x => x.LabId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasIndex(x => x.LabId);
+        builder.HasIndex(x => new { x.LabId, x.IpAddress, x.Port });
+    }
+}
+
 public class LabSensorConfiguration : IEntityTypeConfiguration<LabSensor>
 {
     public void Configure(EntityTypeBuilder<LabSensor> builder)

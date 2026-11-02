@@ -105,3 +105,63 @@ public class UpdateLabDeviceRequest
     [MinLength(6), MaxLength(128)]
     public string? NewPassword { get; set; }
 }
+
+public class SmartAcDto
+{
+    public int Id { get; set; }
+    public int LabId { get; set; }
+    public string LabName { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string IpAddress { get; set; } = string.Empty;
+    public int Port { get; set; }
+    public string? PathPrefix { get; set; }
+    public bool IsActive { get; set; }
+    public int? LastTargetTempC { get; set; }
+    public bool? LastPowerOn { get; set; }
+    public DateTime? LastSeenAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class CreateSmartAcRequest
+{
+    [Required]
+    public int LabId { get; set; }
+
+    [Required, MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required, MaxLength(128)]
+    public string IpAddress { get; set; } = string.Empty;
+
+    [Range(1, 65535)]
+    public int Port { get; set; } = 80;
+
+    [MaxLength(100)]
+    public string? PathPrefix { get; set; }
+}
+
+public class UpdateSmartAcRequest
+{
+    [Required]
+    public int LabId { get; set; }
+
+    [Required, MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required, MaxLength(128)]
+    public string IpAddress { get; set; } = string.Empty;
+
+    [Range(1, 65535)]
+    public int Port { get; set; } = 80;
+
+    [MaxLength(100)]
+    public string? PathPrefix { get; set; }
+
+    public bool IsActive { get; set; } = true;
+}
+
+public class SetSmartAcTempRequest
+{
+    [Range(16, 30)]
+    public int Celsius { get; set; } = 24;
+}

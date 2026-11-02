@@ -89,6 +89,12 @@
     cursor: not-allowed;
   }
 }
+.motion-lock {
+  &.tag-locked {
+    background: var(--gray-badge-bg);
+    color: var(--gray-badge-txt);
+  }
+}
 .time-lbl { display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--text-lt); }
 
 .ai-banner {

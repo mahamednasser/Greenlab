@@ -44,6 +44,25 @@ public class DevicesController : ControllerBase
         if (lab == null)
             return NotFound("Lab not found");
 
+        // Motion sensor locked: keep last light/fan regardless of occupancy.
+        if (lab.ControlOverride?.MotionSensorDisabled == true)
+        {
+            var cached = LabDeviceStateCache.GetState(labId);
+            var ov = lab.ControlOverride;
+            var lightOn = ov.ForceLightOn ?? cached.LightOn;
+            var fanOn = ov.ForceFanOn ?? cached.FanOn;
+            LabDeviceStateCache.SetState(labId, lightOn, fanOn);
+            return Ok(new DeviceEventResponse
+            {
+                LightOn = lightOn,
+                FanOn = fanOn,
+                Relay3On = ov.ForceRelay3On ?? false,
+                Relay4On = ov.ForceRelay4On ?? false,
+                MotionIgnored = true,
+                OccupancyCount = lab.LastOccupancyCount
+            });
+        }
+
         var url = !string.IsNullOrWhiteSpace(lab.CameraRtspUrl) ? lab.CameraRtspUrl : "http://localhost:8000/current-count";
 
         var client=_httpClientFactory.CreateClient();

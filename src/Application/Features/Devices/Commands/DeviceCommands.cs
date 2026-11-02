@@ -56,12 +56,14 @@ public class HandleDeviceEventCommandHandler : IRequestHandler<HandleDeviceEvent
         device.LastSeenAt = DateTime.UtcNow;
 
         var controlOverride = lab.ControlOverride;
-        if (controlOverride?.MotionSensorDisabled == true && request.Request.MotionDetected)
+        // Locked motion sensor: echo last light/fan so occupancy/motion cannot change them.
+        if (controlOverride?.MotionSensorDisabled == true)
         {
+            var cached = LabDeviceStateCache.GetState(request.LabId);
             var responseIgnored = new DeviceEventResponse
             {
-                LightOn = controlOverride.ForceLightOn ?? false,
-                FanOn = controlOverride.ForceFanOn ?? false,
+                LightOn = controlOverride.ForceLightOn ?? cached.LightOn,
+                FanOn = controlOverride.ForceFanOn ?? cached.FanOn,
                 Relay3On = controlOverride.ForceRelay3On ?? false,
                 Relay4On = controlOverride.ForceRelay4On ?? false,
                 MotionIgnored = true,

@@ -64,6 +64,7 @@ using (var scope = app.Services.CreateScope())
     var passwords = scope.ServiceProvider.GetRequiredService<IPasswordHashService>();
     var deviceKeyHasher = scope.ServiceProvider.GetRequiredService<IDeviceKeyHasher>();
     await DbSeeder.SeedAsync(db, passwords, deviceKeyHasher);
+    await DbSeeder.EnsureDemoDashboardAsync(db);
 }
 
 if (app.Environment.IsDevelopment())

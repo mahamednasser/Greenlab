@@ -19,8 +19,10 @@ export class LabsComponent implements OnInit, OnDestroy {
   loading = true;
   errorMsg: string | null = null;
   private langSub?: Subscription;
+  private refreshTimer?: ReturnType<typeof setInterval>;
   private lightBusyByLab: Record<string, boolean> = {};
   private fanBusyByLab: Record<string, boolean> = {};
+  private motionBusyByLab: Record<string, boolean> = {};
 
   constructor(
     private readonly svc: LabService,
@@ -31,23 +33,30 @@ export class LabsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.fetch();
     this.langSub = this.translate.onLangChange.subscribe(() => this.fetch());
+    // Match backend occupancy poll (15s) so card people counts stay live.
+    this.refreshTimer = setInterval(() => this.fetch(true), 15000);
   }
 
   ngOnDestroy(): void {
     this.langSub?.unsubscribe();
+    if (this.refreshTimer) clearInterval(this.refreshTimer);
   }
 
-  private fetch(): void {
-    this.loading = true;
-    this.errorMsg = null;
+  private fetch(silent = false): void {
+    if (!silent) {
+      this.loading = true;
+      this.errorMsg = null;
+    }
     this.svc.getLabs().subscribe({
       next: (labs) => {
         this.labs = labs;
         this.loading = false;
       },
       error: () => {
-        this.loading = false;
-        this.errorMsg = 'LABS.ERROR';
+        if (!silent) {
+          this.loading = false;
+          this.errorMsg = 'LABS.ERROR';
+        }
       },
     });
   }
@@ -111,6 +120,31 @@ export class LabsComponent implements OnInit, OnDestroy {
         lab.ac = prev;
         this.fanBusyByLab[lab.id] = false;
         this.errorMsg = 'LABS.CONTROL_FAN_ERROR';
+      },
+    });
+  }
+
+  isMotionBusy(labId: string): boolean {
+    return !!this.motionBusyByLab[labId];
+  }
+
+  /** Lock = motion ignored (keep last light/fan). Unlock = normal auto. Default unlocked. */
+  onToggleMotionLock(ev: Event, lab: Lab): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (this.isMotionBusy(lab.id)) return;
+    const nextDisabled = !lab.motionSensorDisabled;
+    const prev = lab.motionSensorDisabled;
+    lab.motionSensorDisabled = nextDisabled;
+    this.motionBusyByLab[lab.id] = true;
+    this.svc.setMotionSensorDisabled(Number(lab.id), nextDisabled).subscribe({
+      next: () => {
+        this.motionBusyByLab[lab.id] = false;
+      },
+      error: () => {
+        lab.motionSensorDisabled = prev;
+        this.motionBusyByLab[lab.id] = false;
+        this.errorMsg = 'LABS.CONTROL_MOTION_ERROR';
       },
     });
   }

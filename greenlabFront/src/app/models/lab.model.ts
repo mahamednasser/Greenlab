@@ -12,6 +12,8 @@ export interface Lab {
   fanRuntimeSeconds: number;
   ac: string; lights: string; pcs: string; lastUpdate: string;
   peopleCount: number;
+  /** false = motion sensor active (default); true = locked / ignored. */
+  motionSensorDisabled: boolean;
 }
 
 export interface Device {

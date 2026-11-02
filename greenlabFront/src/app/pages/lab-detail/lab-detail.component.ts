@@ -7,7 +7,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { LabService } from '../../services/lab.service';
 import { AuthService } from '../../core/auth.service';
 import { Device } from '../../models/lab.model';
-import { LabDetailDto, LabOverviewApiRow } from '../../models/api.types';
+import { LabDetailDto, LabOverviewApiRow, SmartAcDto, readLabOverride } from '../../models/api.types';
 import { LAB_MAX_WATTS, LIGHT_WATTS, FAN_WATTS, energyFromRuntime, labWatts } from '../../utils/power';
 
 @Component({
@@ -19,6 +19,7 @@ import { LAB_MAX_WATTS, LIGHT_WATTS, FAN_WATTS, energyFromRuntime, labWatts } fr
 })
 export class LabDetailComponent implements OnInit, OnDestroy {
   devices: Device[] = [];
+  smartAcs: SmartAcDto[] = [];
   labName = 'Lab';
   floorLabel = '—';
   statusLabel: 'Active' | 'Idle' | 'Off' = 'Active';
@@ -36,8 +37,14 @@ export class LabDetailComponent implements OnInit, OnDestroy {
 
   lightOn = false;
   fanOn = false;
+  /** false = sensor active (default); true = locked. */
+  motionSensorDisabled = false;
   lightBusy = false;
   fanBusy = false;
+  motionBusy = false;
+  acBusy: Record<number, boolean> = {};
+  acTempBusy: Record<number, boolean> = {};
+  peopleCount = 0;
 
   readonly lightWatts = LIGHT_WATTS;
   readonly fanWatts = FAN_WATTS;
@@ -47,6 +54,7 @@ export class LabDetailComponent implements OnInit, OnDestroy {
 
   labId = NaN;
   private langSub?: Subscription;
+  private refreshTimer?: ReturnType<typeof setInterval>;
 
   get isAdmin(): boolean {
     return this.auth.isAdmin();
@@ -64,18 +72,24 @@ export class LabDetailComponent implements OnInit, OnDestroy {
     this.labId = idParam ? parseInt(idParam, 10) : NaN;
     this.load();
     this.langSub = this.translate.onLangChange.subscribe(() => this.load());
+    // Match backend occupancy poll so people count stays live on this page.
+    this.refreshTimer = setInterval(() => this.load(true), 15000);
   }
 
   ngOnDestroy(): void {
     this.langSub?.unsubscribe();
+    if (this.refreshTimer) clearInterval(this.refreshTimer);
   }
 
-  private load(): void {
-    this.loading = true;
-    this.errorMsg = null;
-    this.controlError = null;
-    this.showStaffNote = false;
-    this.devices = [];
+  private load(silent = false): void {
+    if (!silent) {
+      this.loading = true;
+      this.errorMsg = null;
+      this.controlError = null;
+      this.showStaffNote = false;
+      this.devices = [];
+      this.smartAcs = [];
+    }
 
     if (Number.isNaN(this.labId)) {
       this.loading = false;
@@ -88,37 +102,48 @@ export class LabDetailComponent implements OnInit, OnDestroy {
         lab: this.svc.getLabDetail(this.labId).pipe(catchError(() => of(null))),
         devices: this.svc.getLabDevices(this.labId).pipe(catchError(() => of([]))),
         overview: this.svc.getLabOverviewById(this.labId).pipe(catchError(() => of(null))),
+        smartAcs: this.svc.getSmartAcsByLab(this.labId).pipe(catchError(() => of([]))),
       }).subscribe({
-        next: ({ lab, devices, overview }) => {
+        next: ({ lab, devices, overview, smartAcs }) => {
           this.loading = false;
           if (!lab) {
-            this.errorMsg = 'LAB_DETAIL.ERR_NOT_FOUND';
+            if (!silent) this.errorMsg = 'LAB_DETAIL.ERR_NOT_FOUND';
             return;
           }
           this.applyLab(lab, overview);
-          this.devices = devices.map((d) => this.svc.mapDeviceDto(d));
+          this.smartAcs = smartAcs;
+          if (!silent) {
+            this.devices = devices.map((d) => this.svc.mapDeviceDto(d));
+          }
           this.updateGauge();
         },
         error: () => {
-          this.loading = false;
-          this.errorMsg = 'LAB_DETAIL.ERR_LOAD';
+          if (!silent) {
+            this.loading = false;
+            this.errorMsg = 'LAB_DETAIL.ERR_LOAD';
+          }
         },
       });
       return;
     }
 
     if (this.auth.isStaff()) {
-      this.svc.getStaffLabRow(this.labId).subscribe({
-        next: (row) => {
+      forkJoin({
+        row: this.svc.getStaffLabRow(this.labId).pipe(catchError(() => of(null))),
+        smartAcs: this.svc.getSmartAcsByLab(this.labId).pipe(catchError(() => of([]))),
+      }).subscribe({
+        next: ({ row, smartAcs }) => {
           this.loading = false;
           if (!row) {
-            this.errorMsg = 'LAB_DETAIL.ERR_STAFF';
+            if (!silent) this.errorMsg = 'LAB_DETAIL.ERR_STAFF';
             return;
           }
           this.labName = row.name;
           this.floorLabel = '—';
           this.lightOn = !!row.actualLightOn;
           this.fanOn = !!row.actualFanOn;
+          this.motionSensorDisabled = !!readLabOverride(row)?.motionSensorDisabled;
+          this.peopleCount = Number(row.lastOccupancyCount ?? 0);
           this.statusLabel = row.inSession
             ? 'Active'
             : this.lightOn || this.fanOn
@@ -129,16 +154,21 @@ export class LabDetailComponent implements OnInit, OnDestroy {
           this.energyUsed = Number(row.energyKwh ?? 0) || energyFromRuntime(lightSec, fanSec);
           this.currentWatts = Number(row.currentWatts ?? 0) || labWatts(this.lightOn, this.fanOn);
           this.energyMax = LAB_MAX_WATTS;
-          this.occupancySummary = row.inSession
-            ? this.translate.instant('LAB_DETAIL.OCC_SESSION')
-            : this.translate.instant('LAB_DETAIL.OCC_NONE');
-          this.lastSeenSummary = this.translate.instant('LAB_DETAIL.STAFF_VIEW');
+          this.occupancySummary = this.translate.instant('LAB_DETAIL.LAST_COUNT', {
+            count: this.peopleCount,
+          });
+          this.lastSeenSummary = row.lastOccupancyAt
+            ? this.formatRelative(row.lastOccupancyAt)
+            : this.translate.instant('LAB_DETAIL.STAFF_VIEW');
           this.showStaffNote = true;
+          this.smartAcs = smartAcs;
           this.updateGauge();
         },
         error: () => {
-          this.loading = false;
-          this.errorMsg = 'LAB_DETAIL.ERR_LOAD';
+          if (!silent) {
+            this.loading = false;
+            this.errorMsg = 'LAB_DETAIL.ERR_LOAD';
+          }
         },
       });
       return;
@@ -157,6 +187,8 @@ export class LabDetailComponent implements OnInit, OnDestroy {
     if (overview) {
       this.lightOn = !!overview.actualLightOn;
       this.fanOn = !!overview.actualFanOn;
+      this.motionSensorDisabled = !!readLabOverride(overview)?.motionSensorDisabled;
+      this.peopleCount = overview.lastOccupancyCount ?? 0;
       this.statusLabel = overview.inSession
         ? 'Active'
         : this.lightOn || this.fanOn
@@ -169,13 +201,15 @@ export class LabDetailComponent implements OnInit, OnDestroy {
         Number(overview.currentWatts ?? 0) || labWatts(this.lightOn, this.fanOn);
       this.energyMax = LAB_MAX_WATTS;
       this.occupancySummary = this.translate.instant('LAB_DETAIL.LAST_COUNT', {
-        count: overview.lastOccupancyCount,
+        count: this.peopleCount,
       });
       this.lastSeenSummary = this.formatRelative(overview.lastOccupancyAt);
     } else {
       this.statusLabel = 'Off';
       this.lightOn = false;
       this.fanOn = false;
+      this.motionSensorDisabled = false;
+      this.peopleCount = 0;
       this.energyUsed = 0;
       this.currentWatts = 0;
       this.energyMax = LAB_MAX_WATTS;
@@ -224,6 +258,70 @@ export class LabDetailComponent implements OnInit, OnDestroy {
         this.controlError = 'LABS.CONTROL_FAN_ERROR';
       },
     });
+  }
+
+  toggleMotionLock(): void {
+    if (this.motionBusy || Number.isNaN(this.labId)) return;
+    const nextDisabled = !this.motionSensorDisabled;
+    const prev = this.motionSensorDisabled;
+    this.motionSensorDisabled = nextDisabled;
+    this.motionBusy = true;
+    this.controlError = null;
+    this.svc.setMotionSensorDisabled(this.labId, nextDisabled).subscribe({
+      next: () => {
+        this.motionBusy = false;
+      },
+      error: () => {
+        this.motionSensorDisabled = prev;
+        this.motionBusy = false;
+        this.controlError = 'LABS.CONTROL_MOTION_ERROR';
+      },
+    });
+  }
+
+  toggleSmartAc(ac: SmartAcDto): void {
+    if (this.acBusy[ac.id]) return;
+    const next = !(ac.lastPowerOn === true);
+    const prev = ac.lastPowerOn;
+    ac.lastPowerOn = next;
+    this.acBusy[ac.id] = true;
+    this.controlError = null;
+    this.svc.setSmartAcPower(ac.id, next).subscribe({
+      next: (updated) => {
+        Object.assign(ac, updated);
+        this.acBusy[ac.id] = false;
+      },
+      error: () => {
+        ac.lastPowerOn = prev;
+        this.acBusy[ac.id] = false;
+        this.controlError = 'LAB_DETAIL.AC_POWER_ERROR';
+      },
+    });
+  }
+
+  setSmartAcTemp(ac: SmartAcDto, celsius: number): void {
+    if (this.acTempBusy[ac.id]) return;
+    const temp = Math.min(30, Math.max(16, Math.round(celsius)));
+    const prev = ac.lastTargetTempC;
+    ac.lastTargetTempC = temp;
+    this.acTempBusy[ac.id] = true;
+    this.controlError = null;
+    this.svc.setSmartAcTemp(ac.id, temp).subscribe({
+      next: (updated) => {
+        Object.assign(ac, updated);
+        this.acTempBusy[ac.id] = false;
+      },
+      error: () => {
+        ac.lastTargetTempC = prev;
+        this.acTempBusy[ac.id] = false;
+        this.controlError = 'LAB_DETAIL.AC_TEMP_ERROR';
+      },
+    });
+  }
+
+  bumpAcTemp(ac: SmartAcDto, delta: number): void {
+    const current = ac.lastTargetTempC ?? 24;
+    this.setSmartAcTemp(ac, current + delta);
   }
 
   private syncPowerFromLoads(): void {

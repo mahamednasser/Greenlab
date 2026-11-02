@@ -9,6 +9,7 @@ import {
   LabDetailDto,
   LabDeviceDto,
   LabOverviewApiRow,
+  SmartAcDto,
   readLabOverride,
 } from '../models/api.types';
 import { AuthService } from '../core/auth.service';
@@ -87,6 +88,32 @@ export class LabService {
     const base = this.auth.isAdmin() ? `${this.api}/admin/labs` : `${this.api}/staff/labs`;
     return this.http
       .post(`${base}/fan/${action}?LabId=${labId}&DeviceId=${deviceId}`, {})
+      .pipe(map(() => void 0));
+  }
+
+  getSmartAcsByLab(labId: number): Observable<SmartAcDto[]> {
+    const base = this.auth.isAdmin()
+      ? `${this.api}/admin/smart-acs/by-lab/${labId}`
+      : `${this.api}/staff/smart-acs/by-lab/${labId}`;
+    return this.http.get<SmartAcDto[]>(base);
+  }
+
+  setSmartAcPower(acId: number, on: boolean): Observable<SmartAcDto> {
+    const action = on ? 'on' : 'off';
+    const base = this.auth.isAdmin() ? `${this.api}/admin/smart-acs` : `${this.api}/staff/smart-acs`;
+    return this.http.post<SmartAcDto>(`${base}/${acId}/power/${action}`, {});
+  }
+
+  setSmartAcTemp(acId: number, celsius: number): Observable<SmartAcDto> {
+    const base = this.auth.isAdmin() ? `${this.api}/admin/smart-acs` : `${this.api}/staff/smart-acs`;
+    return this.http.post<SmartAcDto>(`${base}/${acId}/temp`, { celsius });
+  }
+
+  /** Lock/unlock motion auto-control. Default unlocked (sensor active). */
+  setMotionSensorDisabled(labId: number, disabled: boolean): Observable<void> {
+    const base = this.auth.isAdmin() ? `${this.api}/admin/labs` : `${this.api}/staff/labs`;
+    return this.http
+      .post(`${base}/${labId}/override`, { motionSensorDisabled: disabled })
       .pipe(map(() => void 0));
   }
 
@@ -352,6 +379,7 @@ export class LabService {
     const fanSec = Number(o.fanRuntimeSeconds ?? 0);
     const energyUsed = Number(o.currentWatts ?? 0) || labWatts(!!o.actualLightOn, !!o.actualFanOn);
     const energyKwh = Number(o.energyKwh ?? 0) || energyFromRuntime(lightSec, fanSec);
+    const ov = readLabOverride(o);
     return {
       id: String(o.id),
       name: o.name,
@@ -367,6 +395,7 @@ export class LabService {
       pcs: 'IDLE',
       lastUpdate: formatRelativeIso(o.lastOccupancyAt) || `People: ${o.lastOccupancyCount}`,
       peopleCount: o.lastOccupancyCount,
+      motionSensorDisabled: !!ov?.motionSensorDisabled,
     };
   }
 
@@ -375,7 +404,7 @@ export class LabService {
     const ac = r.actualFanOn ? 'ON' : 'OFF';
     const status: LabStatus = r.inSession ? 'Active' : r.actualLightOn || r.actualFanOn ? 'Idle' : 'Off';
     const ov = readLabOverride(r);
-    const lastOccupancy = (r['lastOccupancyCount'] as number) || 0;
+    const lastOccupancy = Number(r.lastOccupancyCount ?? 0);
     const lightSec = Number(r.lightRuntimeSeconds ?? 0);
     const fanSec = Number(r.fanRuntimeSeconds ?? 0);
     return {
@@ -391,8 +420,15 @@ export class LabService {
       ac,
       lights,
       pcs: 'IDLE',
-      lastUpdate: ov ? 'Override active' : r.inSession ? 'In session' : 'Out of session',
+      lastUpdate: r.lastOccupancyAt
+        ? formatRelativeIso(r.lastOccupancyAt)
+        : ov
+          ? 'Override active'
+          : r.inSession
+            ? 'In session'
+            : 'Out of session',
       peopleCount: lastOccupancy,
+      motionSensorDisabled: !!ov?.motionSensorDisabled,
     };
   }
 }

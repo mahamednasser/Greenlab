@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Lab> Labs => Set<Lab>();
     public DbSet<LabDevice> LabDevices => Set<LabDevice>();
+    public DbSet<SmartAc> SmartAcs => Set<SmartAc>();
     public DbSet<LabSensor> LabSensors => Set<LabSensor>();
     public DbSet<LabControlOverride> LabControlOverrides => Set<LabControlOverride>();
     public DbSet<ManualControlCommand> ManualControlCommands => Set<ManualControlCommand>();

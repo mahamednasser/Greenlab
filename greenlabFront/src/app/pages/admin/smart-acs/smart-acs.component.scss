@@ -1,0 +1,16 @@
+.form-title { font-size: 16px; font-weight: 700; color: var(--text-dark); margin: 0; }
+.hint { font-size: 12.5px; color: var(--text-gray); line-height: 1.5; margin: 0; }
+.muted { display: block; font-size: 11.5px; color: var(--text-lt); margin-top: 2px; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.btn-secondary.sm {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: var(--r-md);
+  &.danger { color: #b91c1c; }
+}
+code {
+  font-size: 12.5px;
+  background: var(--border-lt);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
